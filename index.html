@@ -1,0 +1,2561 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a0e1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TXO 條件委託">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>TXO 條件委託單 — 手機版</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+:root {
+  --bg: #0a0e1a;
+  --surface: #111827;
+  --surface2: #1a2236;
+  --surface3: #222d44;
+  --border: rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+  --text: #e8edf5;
+  --text2: #8a96b0;
+  --text3: #5a6580;
+  --accent: #3b82f6;
+  --accent2: #60a5fa;
+  --accent-glow: rgba(59,130,246,0.15);
+  --red: #ef4444;
+  --red2: #fca5a5;
+  --red-bg: rgba(239,68,68,0.12);
+  --green: #22c55e;
+  --green2: #86efac;
+  --green-bg: rgba(34,197,94,0.12);
+  --gold: #f59e0b;
+  --gold-bg: rgba(245,158,11,0.12);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --font: 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { 
+  font-family: var(--font); 
+  background: var(--bg); 
+  color: var(--text); 
+  overscroll-behavior: none;
+  min-height: 100dvh;
+}
+
+/* ── Onboarding Overlay ── */
+.onboard-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  transition: opacity .4s, transform .4s;
+}
+.onboard-overlay.hidden { opacity: 0; pointer-events: none; transform: translateY(20px); }
+
+.onboard-steps { flex: 1; overflow: hidden; position: relative; }
+.onboard-step {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 40px 28px;
+  text-align: center;
+  opacity: 0; transform: translateX(60px);
+  transition: opacity .45s, transform .45s;
+  pointer-events: none;
+}
+.onboard-step.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.onboard-step.exit { opacity: 0; transform: translateX(-60px); }
+
+.onboard-icon {
+  width: 80px; height: 80px;
+  border-radius: 24px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  margin-bottom: 28px;
+}
+.onboard-title { font-size: 24px; font-weight: 900; margin-bottom: 12px; line-height: 1.3; }
+.onboard-desc { font-size: 15px; color: var(--text2); line-height: 1.7; max-width: 320px; }
+
+.onboard-dots { display: flex; gap: 8px; justify-content: center; padding: 20px; }
+.onboard-dot {
+  width: 8px; height: 8px; border-radius: 99px;
+  background: var(--text3); transition: all .3s;
+}
+.onboard-dot.active { width: 24px; background: var(--accent); }
+
+.onboard-actions { padding: 20px 28px calc(20px + var(--safe-bottom)); display: flex; gap: 12px; }
+.onboard-btn {
+  flex: 1; padding: 16px;
+  border: none; border-radius: var(--radius);
+  font-family: var(--font); font-size: 16px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+}
+.onboard-btn.primary { background: var(--accent); color: #fff; }
+.onboard-btn.primary:active { transform: scale(.97); background: #2563eb; }
+.onboard-btn.secondary { background: var(--surface2); color: var(--text2); }
+.onboard-btn.skip-btn { background: transparent; color: var(--text3); flex: 0 0 auto; padding: 16px 20px; }
+
+/* ── App Shell ── */
+.app { display: none; flex-direction: column; min-height: 100dvh; }
+.app.active { display: flex; }
+
+/* ── Top Bar ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,14,26,0.88);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.topbar-title { font-size: 17px; font-weight: 900; flex: 1; }
+.topbar-status {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  padding: 4px 10px; border-radius: 99px;
+}
+.topbar-status.idle { background: var(--surface2); color: var(--text3); }
+.topbar-status.loaded { background: var(--green-bg); color: var(--green); }
+.topbar-status.running { background: var(--accent-glow); color: var(--accent2); animation: pulse-status 2s infinite; }
+@keyframes pulse-status { 0%,100%{ opacity:1 } 50%{ opacity:.6 } }
+
+/* ── Bottom Nav ── */
+.bottomnav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(17,24,39,0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: var(--safe-bottom);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  padding: 10px 4px 8px;
+  color: var(--text3); font-size: 10px; font-weight: 600;
+  cursor: pointer; transition: color .2s;
+  border: none; background: none;
+  position: relative;
+}
+.nav-item.active { color: var(--accent2); }
+.nav-item.active::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 24px; height: 2px; border-radius: 2px;
+  background: var(--accent);
+}
+.nav-icon { font-size: 20px; line-height: 1; }
+
+/* ── Page Content ── */
+.page-content {
+  flex: 1;
+  padding: 0 0 calc(68px + var(--safe-bottom));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Section ── */
+.section { padding: 16px; }
+.section + .section { padding-top: 0; }
+.section-label {
+  font-size: 11px; font-weight: 700; color: var(--text3);
+  letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card + .card { margin-top: 12px; }
+.card-header {
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.card-header-icon {
+  width: 36px; height: 36px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.card-header-text { flex: 1; }
+.card-header-title { font-size: 15px; font-weight: 700; }
+.card-header-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.card-body { padding: 16px; }
+.card-body-compact { padding: 12px 16px; }
+
+/* ── File Upload ── */
+.upload-zone {
+  border: 2px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .3s;
+  position: relative;
+}
+.upload-zone:active { border-color: var(--accent); background: var(--accent-glow); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 40px; margin-bottom: 12px; }
+.upload-text { font-size: 15px; font-weight: 600; }
+.upload-hint { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+/* ── Select Dropdown ── */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field-label { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.field-select, .field-input {
+  width: 100%; padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text); font-family: var(--font); font-size: 15px;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color .2s;
+}
+.field-select { background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238a96b0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+.field-select:focus, .field-input:focus { outline: none; border-color: var(--accent); }
+.field-input { font-family: var(--mono); }
+
+.field-row { display: flex; gap: 10px; align-items: flex-end; }
+.field-row .field { flex: 1; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 20px;
+  border: none; border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  width: 100%;
+}
+.btn:active { transform: scale(.97); }
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:active { background: #2563eb; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:active { background: #dc2626; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
+.btn-sm { padding: 10px 14px; font-size: 13px; width: auto; }
+.btn-group { display: flex; gap: 8px; }
+.btn-group .btn { flex: 1; }
+
+/* ── TX Bar ── */
+.tx-bar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.tx-badge {
+  font-size: 11px; font-weight: 800; font-family: var(--mono);
+  padding: 3px 8px; border-radius: var(--radius-xs);
+  background: var(--accent-glow); color: var(--accent2);
+  flex-shrink: 0;
+}
+.tx-price {
+  font-family: var(--mono); font-size: 20px; font-weight: 900;
+  flex-shrink: 0;
+}
+.tx-chg {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  padding: 3px 8px; border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+.tx-chg.up { background: var(--red-bg); color: var(--red2); }
+.tx-chg.down { background: var(--green-bg); color: var(--green2); }
+.tx-chg.flat { background: var(--surface2); color: var(--text3); }
+.tx-detail { font-family: var(--mono); font-size: 11px; color: var(--text3); flex-shrink: 0; }
+
+/* ── T-Table (Option Chain) ── */
+.ttable-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ttable {
+  width: 100%; border-collapse: collapse;
+  font-family: var(--mono); font-size: 15px; font-weight: 700;
+  table-layout: fixed;
+}
+.ttable th {
+  padding: 10px 4px; text-align: center;
+  font-size: 12px; font-weight: 800; color: var(--text3);
+  letter-spacing: 1px; text-transform: uppercase;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky; top: 0; z-index: 1;
+}
+/* C量/C價 header: red background, white text */
+.ttable th:nth-child(1),
+.ttable th:nth-child(2) {
+  background: #c0392b !important;
+  color: #fff !important;
+}
+/* P價/P量 header: green background, white text */
+.ttable th:nth-child(4),
+.ttable th:nth-child(5) {
+  background: #16a34a !important;
+  color: #fff !important;
+}
+.ttable td {
+  padding: 12px 4px; text-align: center;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  transition: background .15s;
+  font-weight: 700;
+}
+.ttable td.center { text-align: center; }
+.ttable td.strike-cell {
+  text-align: center; font-weight: 900; font-size: 16px; color: var(--text);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+}
+.ttable td.strike-cell:active { background: var(--accent-glow); color: var(--accent2); }
+.ttable td.td-c, .ttable td.td-p { cursor: pointer; }
+.ttable td.td-c:active, .ttable td.td-p:active { background: var(--accent-glow) !important; }
+.ttable tr.sel td { background: rgba(59,130,246,0.08) !important; }
+.ttable td.n20c { background: rgba(96,165,250,0.1); }
+.ttable td.n20p { background: rgba(248,113,113,0.1); }
+.ttable tr.n20-row-both td { background: rgba(245,158,11,0.06); }
+.red { color: var(--red2); }
+.green { color: var(--green2); }
+
+/* ── Chart (80/20 layout) ── */
+.chart-page-layout {
+  display: flex; flex-direction: column;
+  height: calc(100dvh - 56px - 60px - var(--safe-bottom));
+  overflow: hidden;
+}
+.chart-area {
+  flex: 4; /* 80% */
+  display: flex; flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.chart-container { flex: 1; position: relative; min-height: 0; }
+
+/* ── K線資訊 懸浮框 ── */
+.kinfo-float {
+  position: absolute;
+  top: 8px; left: 8px;
+  z-index: 10;
+  display: flex; align-items: center; gap: 12px;
+  padding: 7px 14px;
+  background: rgba(10,14,26,0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1.4;
+  max-width: calc(100% - 16px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+}
+
+/* ── Strike Nav Buttons ── */
+.chart-strike-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex-shrink: 0;
+}
+.chart-strike-btn {
+  border: none;
+  background: var(--surface2);
+  color: var(--text2);
+  font-size: 10px;
+  line-height: 1;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all .15s;
+  border-radius: 4px;
+}
+.chart-strike-btn:first-child { border-radius: 4px 4px 0 0; }
+.chart-strike-btn:last-child { border-radius: 0 0 4px 4px; }
+.chart-strike-btn:active { background: var(--accent); color: #fff; transform: scale(.92); }
+.chart-tabs {
+  display: flex; align-items: center;
+  padding: 8px 12px; gap: 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.chart-name {
+  font-family: var(--mono); font-size: 13px; font-weight: 800;
+  color: var(--text); white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: auto;
+}
+.chart-tabs-right {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.chart-tab {
+  padding: 6px 12px; border: none; border-radius: var(--radius-xs);
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  background: var(--surface2); color: var(--text3); cursor: pointer;
+  transition: all .2s;
+}
+.chart-tab.active { background: var(--accent); color: #fff; }
+
+/* ── Backtest Row Controls ── */
+.bt-row { display: flex; gap: 8px; align-items: center; }
+.bt-btn {
+  padding: 8px 12px;
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  background: var(--surface2); color: var(--text);
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all .2s;
+  white-space: nowrap;
+}
+.bt-btn:active { transform: scale(.96); background: var(--surface3); }
+.bt-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.bt-btn:disabled { opacity: .4; pointer-events: none; }
+.bt-progress {
+  flex: 1; height: 6px; border-radius: 3px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--surface2);
+}
+.bt-progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg);
+}
+.bt-clock {
+  font-family: var(--mono); font-size: 14px; font-weight: 700;
+  color: var(--accent2); min-width: 72px; text-align: center;
+}
+
+/* ── Order Panel ── */
+.order-row {
+  display: flex; gap: 8px;
+}
+.order-side-btn {
+  flex: 1; padding: 14px; border: none; border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 16px; font-weight: 900;
+  cursor: pointer; transition: all .2s;
+}
+.order-side-btn.buy { background: var(--red-bg); color: var(--red2); }
+.order-side-btn.buy:active { background: rgba(239,68,68,0.25); }
+.order-side-btn.sell { background: var(--green-bg); color: var(--green2); }
+.order-side-btn.sell:active { background: rgba(34,197,94,0.25); }
+
+/* ── Stats Grid ── */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+.stat-card.full { grid-column: 1 / -1; }
+.stat-label { font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }
+.stat-value { font-family: var(--mono); font-size: 20px; font-weight: 900; }
+
+/* ── Config Row ── */
+.config-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.config-row:last-child { border-bottom: none; }
+.config-label { font-size: 14px; color: var(--text2); display: flex; align-items: center; gap: 6px; }
+.config-value { display: flex; align-items: center; gap: 6px; }
+.config-input {
+  width: 70px; padding: 8px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-xs);
+  color: var(--text); font-family: var(--mono); font-size: 14px;
+  text-align: center;
+}
+.config-input:focus { outline: none; border-color: var(--accent); }
+.config-select {
+  padding: 8px 28px 8px 10px;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius-xs);
+  color: var(--text); font-family: var(--font); font-size: 13px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238a96b0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+}
+
+/* ── Auto Order Table ── */
+.ao-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ao-table th {
+  padding: 8px 6px; text-align: center;
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  background: var(--surface2); border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.ao-table td {
+  padding: 8px 6px; text-align: center;
+  font-family: var(--mono); font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Winner Badge ── */
+.winner-badge {
+  display: inline-flex; padding: 3px 10px;
+  border-radius: 99px; font-size: 11px; font-weight: 900;
+  font-family: var(--mono);
+}
+.winner-badge.call { background: var(--red-bg); color: var(--red2); }
+.winner-badge.put { background: var(--green-bg); color: var(--green2); }
+
+/* ── Pattern Badge ── */
+.pattern-badge {
+  display: inline-flex; padding: 6px 14px;
+  border-radius: 99px; font-size: 12px; font-weight: 700;
+  font-family: var(--mono);
+  background: var(--accent-glow); color: var(--accent2);
+  border: 1px solid rgba(59,130,246,0.2);
+}
+
+/* ── Checkbox Toggle ── */
+.toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--surface3); border-radius: 99px;
+  transition: background .3s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute;
+  left: 3px; top: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; transition: transform .3s;
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* ── Empty State ── */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text3); font-size: 14px;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: .5; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 99px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Animations ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+.animate-in { animation: fadeUp .35s ease-out; }
+
+/* ── Tag ── */
+.tag-n20c { background: rgba(96,165,250,.15); color: #93c5fd; padding: 1px 6px; border-radius: 99px; font-size: 10px; }
+.tag-n20p { background: rgba(248,113,113,.15); color: #fca5a5; padding: 1px 6px; border-radius: 99px; font-size: 10px; }
+.tag-atm  { background: var(--gold-bg); color: var(--gold); padding: 1px 6px; border-radius: 99px; font-size: 10px; font-weight: 800; }
+
+/* info text */
+.info-text { font-size: 12px; color: var(--text3); line-height: 1.6; }
+
+/* Status badge */
+.status-badge {
+  display: inline-flex; padding: 3px 10px;
+  border-radius: 99px; font-size: 11px; font-weight: 700;
+  font-family: var(--mono);
+}
+.status-badge.open { background: var(--accent-glow); color: var(--accent2); }
+.status-badge.closed { background: var(--green-bg); color: var(--green2); }
+
+/* ── Price cell highlight ── */
+td.price-01 {
+  background: rgba(34,197,94,0.25) !important;
+  color: var(--green2) !important;
+  font-weight: 900 !important;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ ONBOARDING ══════════ -->
+<div class="onboard-overlay" id="onboard">
+  <div class="onboard-steps">
+    <div class="onboard-step active" data-step="0">
+      <div class="onboard-icon" style="background:var(--accent-glow)">📊</div>
+      <div class="onboard-title">TXO 條件委託單</div>
+      <div class="onboard-desc">台指選擇權回測利器——載入逐筆成交資料，自動掃描符合條件的 CALL/PUT 進場，搭配停利停損自動出場。</div>
+    </div>
+    <div class="onboard-step" data-step="1">
+      <div class="onboard-icon" style="background:var(--gold-bg)">📁</div>
+      <div class="onboard-title">步驟 ① 匯入資料</div>
+      <div class="onboard-desc">選擇含有 OptionsDaily / Daily ZIP 檔的資料夾，系統自動解析交易日與商品資訊。</div>
+    </div>
+    <div class="onboard-step" data-step="2">
+      <div class="onboard-icon" style="background:var(--green-bg)">⚙️</div>
+      <div class="onboard-title">步驟 ② 設定條件</div>
+      <div class="onboard-desc">指定權利金進場區間、停利停損點數、掃描方向等策略參數，一鍵啟動自動下單。</div>
+    </div>
+    <div class="onboard-step" data-step="3">
+      <div class="onboard-icon" style="background:var(--red-bg)">▶️</div>
+      <div class="onboard-title">步驟 ③ 回測播放</div>
+      <div class="onboard-desc">播放 K 線時間軸，系統即時掃描所有履約價，符合條件自動進場、自動出場，完整記錄損益。</div>
+    </div>
+  </div>
+  <div class="onboard-dots" id="onboardDots">
+    <div class="onboard-dot active"></div>
+    <div class="onboard-dot"></div>
+    <div class="onboard-dot"></div>
+    <div class="onboard-dot"></div>
+  </div>
+  <div class="onboard-actions">
+    <button class="onboard-btn skip-btn" id="onboardSkip">跳過</button>
+    <button class="onboard-btn primary" id="onboardNext">下一步</button>
+  </div>
+</div>
+
+<!-- ══════════ MAIN APP ══════════ -->
+<div class="app" id="app">
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-title">TXO 條件委託</div>
+    <span class="topbar-status idle" id="topStatus">未載入</span>
+  </div>
+
+  <!-- Page Content -->
+  <div class="page-content" id="pageContent">
+
+    <!-- ──── PAGE: 首頁 / 資料 ──── -->
+    <div class="page active" id="pageHome">
+      <div class="section">
+        <div class="section-label">匯入資料</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="upload-zone" id="uploadZone">
+              <input type="file" id="folderInput" webkitdirectory directory multiple>
+              <div class="upload-icon">📁</div>
+              <div class="upload-text">點擊選擇資料夾</div>
+              <div class="upload-hint">含 OptionsDaily / Daily 的 ZIP 或 RPT 檔</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="dateSection" style="display:none">
+        <div class="section-label">選擇交易日</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="field">
+              <div class="field-label">📅 交易日</div>
+              <select class="field-select" id="dateSelect" disabled>
+                <option value="">（請先選擇資料夾）</option>
+              </select>
+            </div>
+            <div id="loadStatus" class="info-text" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="selectorSection" style="display:none">
+        <div class="section-label">商品選擇</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field">
+                <div class="field-label">到期月份</div>
+                <select class="field-select" id="expirySelect"></select>
+              </div>
+              <div class="field">
+                <div class="field-label">買賣權</div>
+                <select class="field-select" id="typeSelect"></select>
+              </div>
+            </div>
+            <div class="field-row" style="margin-top:14px">
+              <div class="field">
+                <div class="field-label">履約價</div>
+                <div style="display:flex;gap:6px">
+                  <button class="bt-btn" id="prevStrikeBtn" style="padding:10px">◀</button>
+                  <select class="field-select" id="strikeSelect" style="flex:1"></select>
+                  <button class="bt-btn" id="nextStrikeBtn" style="padding:10px">▶</button>
+                </div>
+              </div>
+            </div>
+            <div class="field-row" style="margin-top:14px">
+              <div class="field">
+                <div class="field-label">交易時段</div>
+                <select class="field-select" id="sessionSelect">
+                  <option value="全部">全部</option>
+                  <option value="一般" selected>一般</option>
+                  <option value="盤後">盤後</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="field-label">K線週期</div>
+                <select class="field-select" id="periodSelect">
+                  <option value="1">1分</option>
+                  <option value="3">3分</option>
+                  <option value="5" selected>5分</option>
+                  <option value="10">10分</option>
+                  <option value="15">15分</option>
+                  <option value="30">30分</option>
+                  <option value="60">60分</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backtest Controls (on Home page) -->
+      <div class="section" id="btSection" style="display:none">
+        <div class="section-label">回測控制</div>
+        <div class="card">
+          <div class="card-body" style="padding:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span class="bt-clock" id="btClock" style="font-size:18px;margin:0">--:--:--</span>
+              <span id="btInfoLabel" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-left:auto"></span>
+            </div>
+            <div class="bt-row" style="margin-bottom:10px">
+              <button class="bt-btn" id="btStart" style="flex:1">▶ 回測</button>
+              <button class="bt-btn" id="btPause" disabled>⏸</button>
+              <button class="bt-btn" id="btResume" disabled>▶</button>
+              <button class="bt-btn" id="btStop" disabled>■</button>
+              <button class="bt-btn" id="btStepBack" disabled>-1</button>
+              <button class="bt-btn" id="btStep" disabled>+1</button>
+            </div>
+            <div class="bt-row" style="margin-bottom:10px">
+              <input type="range" class="bt-progress" id="btProgress" min="0" max="0" step="1" value="0">
+            </div>
+            <div class="bt-row" style="flex-wrap:wrap;gap:8px">
+              <div class="field" style="flex:1;min-width:80px;margin:0">
+                <div class="field-label" style="font-size:10px">步進秒</div>
+                <select class="field-select" id="btStepSec" style="padding:8px 10px;font-size:12px">
+                  <option>1</option><option>5</option><option>10</option>
+                  <option selected>20</option><option>30</option><option>60</option>
+                  <option>120</option><option>300</option>
+                </select>
+              </div>
+              <div class="field" style="flex:1;min-width:80px;margin:0">
+                <div class="field-label" style="font-size:10px">速度</div>
+                <select class="field-select" id="btCalcSpeed" style="padding:8px 10px;font-size:12px">
+                  <option value="1">×1</option><option value="2">×2</option>
+                  <option value="5">×5</option><option value="10">×10</option>
+                  <option value="50">×50</option><option value="100">×100</option>
+                  <option value="1000">×1K</option><option value="5000">×5K</option>
+                </select>
+              </div>
+              <div class="field" style="flex:1;min-width:100px;margin:0">
+                <div class="field-label" style="font-size:10px">跳至</div>
+                <div style="display:flex;gap:4px">
+                  <input type="time" class="field-input" id="btSetTime" step="1" value="09:00:00" style="flex:1;padding:8px 6px;font-size:12px">
+                  <button class="bt-btn" id="btJump" style="padding:8px 12px;font-size:12px">GO</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── PAGE: T 字報價表 ──── -->
+    <div class="page" id="pageChain">
+      <!-- TX 台指期貨 Bar (above T-table) -->
+      <div id="txBarChain" style="display:none">
+        <div class="tx-bar" style="border-radius:0;border-bottom:1px solid var(--border)">
+          <span class="tx-badge">TX</span>
+          <span class="tx-price" id="txPrice2">—</span>
+          <span class="tx-chg flat" id="txChg2">—</span>
+          <span class="tx-detail">開<span id="txOpen2">—</span></span>
+          <span class="tx-detail">高<span id="txHigh2">—</span></span>
+          <span class="tx-detail">低<span id="txLow2">—</span></span>
+          <span class="tx-detail">量<span id="txVol2">—</span></span>
+        </div>
+      </div>
+      <div class="section" style="padding:0">
+        <div class="section-label" style="padding:8px 16px 6px;margin:0">T 字報價表 <span style="font-size:9px;color:var(--text3);letter-spacing:0;text-transform:none;font-weight:400;margin-left:6px">點擊履約價 → 查看TX技術分析</span></div>
+        <div class="ttable-wrap" style="max-height:calc(100dvh - 160px);overflow:auto">
+            <table class="ttable">
+              <thead>
+                <tr>
+                  <th>C量</th><th>C價</th>
+                  <th>履約</th>
+                  <th>P價</th><th>P量</th>
+                </tr>
+              </thead>
+              <tbody id="tBody"></tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── PAGE: K 線圖 (full height) ──── -->
+    <div class="page" id="pageChart">
+      <div class="chart-page-layout">
+        <div class="chart-area" style="flex:1">
+          <div class="chart-tabs">
+            <div id="chartName" class="chart-name">—</div>
+            <div class="chart-tabs-right">
+              <button class="chart-tab active" id="tabTA" data-tab="ta">技術分析</button>
+              <button class="chart-tab" id="tabTrend" data-tab="trend">走勢圖</button>
+              <div class="chart-strike-nav">
+                <button class="chart-strike-btn" id="chartStrikeUp" title="上一檔履約價">▲</button>
+                <button class="chart-strike-btn" id="chartStrikeDown" title="下一檔履約價">▼</button>
+              </div>
+            </div>
+          </div>
+          <div class="chart-container">
+            <div id="chartTA" style="width:100%;height:100%;position:absolute;inset:0"></div>
+            <div id="chartTrend" style="width:100%;height:100%;position:absolute;inset:0;visibility:hidden"></div>
+            <div id="kinfo" class="kinfo-float"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── PAGE: 下單 + 帳戶 ──── -->
+    <div class="page" id="pageOrder">
+      <div class="section">
+        <div class="section-label">市價下單</div>
+        <div class="card">
+          <div class="card-body">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <span style="font-size:13px;color:var(--text2)">商品</span>
+              <span style="font-family:var(--mono);font-weight:800" id="symNow">—</span>
+              <span style="margin-left:auto;font-size:13px;color:var(--text2)">最新價</span>
+              <span style="font-family:var(--mono);font-weight:800;font-size:18px" id="lastPx">—</span>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <div class="field-label">口數</div>
+                <input type="number" class="field-input" id="qtyInput" min="1" step="1" value="1" style="width:100%">
+              </div>
+              <div class="field">
+                <div class="field-label">乘數</div>
+                <input type="number" class="field-input" id="multInput" min="1" value="50" style="width:100%">
+              </div>
+              <div class="field">
+                <div class="field-label">手續稅</div>
+                <input type="number" class="field-input" id="feeInput" min="0" value="0" style="width:100%">
+              </div>
+            </div>
+            <div style="margin:12px 0">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);cursor:pointer">
+                <div class="toggle"><input type="checkbox" id="allowShort"><span class="toggle-slider"></span></div>
+                允許放空
+              </label>
+            </div>
+            <div class="order-row">
+              <button class="order-side-btn buy" id="btnBuy">買進</button>
+              <button class="order-side-btn sell" id="btnSell">賣出</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">委託（限價）</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="field-row">
+              <div class="field">
+                <div class="field-label">買/賣</div>
+                <select class="field-select" id="ltSide"><option value="BUY">買</option><option value="SELL">賣</option></select>
+              </div>
+              <div class="field">
+                <div class="field-label">權利點</div>
+                <input type="number" class="field-input" id="ltPrice" min="0" step="0.1" value="20" style="width:100%">
+              </div>
+              <div class="field">
+                <div class="field-label">口數</div>
+                <input type="number" class="field-input" id="ltQty" min="1" step="1" value="1" style="width:100%">
+              </div>
+            </div>
+            <button class="btn btn-outline" id="btnPlaceLimit" style="margin-top:12px">送出委託</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">帳戶摘要</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">可用現金</div>
+            <div class="stat-value" id="cash">1,000,000</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">已實現損益</div>
+            <div class="stat-value" id="rPnL2">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">未實現損益</div>
+            <div class="stat-value" id="uPnL2">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">權益</div>
+            <div class="stat-value" id="equity2">1,000,000</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">部位</div>
+        <div class="card" style="overflow-x:auto">
+          <table class="ao-table"><thead><tr>
+            <th>商品</th><th>口數</th><th>均價</th><th>現價</th><th>P/L</th>
+          </tr></thead><tbody id="posBody"><tr><td colspan="5" class="empty-state" style="padding:20px">尚無部位</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">成交紀錄</div>
+        <div class="card" style="overflow-x:auto;max-height:200px">
+          <table class="ao-table"><thead><tr>
+            <th>時間</th><th>商品</th><th>買/賣</th><th>口</th><th>價</th><th>實現P/L</th>
+          </tr></thead><tbody id="ordBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">委託清單</div>
+        <div class="card" style="overflow-x:auto;max-height:200px">
+          <table class="ao-table"><thead><tr>
+            <th>時間</th><th>商品</th><th>買/賣</th><th>權利點</th><th>口</th><th>狀態</th><th>操作</th>
+          </tr></thead><tbody id="ltBody"></tbody></table>
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:var(--text3)">未成交：<b id="ltWorkingCnt">0</b></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">風控</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="config-row">
+              <span class="config-label">單筆最大口數</span>
+              <input type="number" class="config-input" id="riskMaxQty" value="50" min="1">
+            </div>
+            <div class="config-row">
+              <span class="config-label">單日停損</span>
+              <input type="number" class="config-input" id="riskEquityStop" value="-999999" style="width:90px">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──── PAGE: 條件委託單 ──── -->
+    <div class="page" id="pageAuto">
+      <div class="section">
+        <div class="section-label">自動策略</div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-header-icon" style="background:linear-gradient(135deg,#ff6b35,#f7c948)">🤖</div>
+            <div class="card-header-text">
+              <div class="card-header-title">條件委託單</div>
+              <div class="card-header-sub">自動掃描 CALL/PUT，符合區間即下單</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="btn-group" style="margin-bottom:16px">
+              <button class="btn btn-accent" id="bt20Run">▶ 啟動自動下單</button>
+              <button class="btn btn-red" id="bt20Stop" style="display:none">■ 停止</button>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="config-label">策略狀態</span>
+              <span class="status-badge closed" id="s1Status">未啟動</span>
+            </div>
+
+            <div class="config-row">
+              <span class="config-label">📌 進場區間（元）</span>
+              <div class="config-value">
+                <input type="number" class="config-input" id="s1EntryMin" value="20" min="0" step="0.5" style="width:56px">
+                <span style="color:var(--text3)">～</span>
+                <input type="number" class="config-input" id="s1EntryMax" value="25" min="0" step="0.5" style="width:56px">
+              </div>
+            </div>
+            <div class="config-row">
+              <span class="config-label">📌 掃描方向</span>
+              <select class="config-select" id="s1ScanSide">
+                <option value="both">雙邊</option>
+                <option value="call">僅CALL</option>
+                <option value="put">僅PUT</option>
+              </select>
+            </div>
+            <div class="config-row">
+              <span class="config-label">📌 每檔口數</span>
+              <input type="number" class="config-input" id="s1Qty" value="1" min="1" style="width:56px">
+            </div>
+            <div class="config-row">
+              <span class="config-label">📌 乘數</span>
+              <input type="number" class="config-input" id="s1Mult" value="50" min="1" style="width:56px">
+            </div>
+            <div class="config-row" style="border-top:2px solid var(--red-bg);padding-top:16px;margin-top:4px">
+              <span class="config-label" style="color:var(--red2);font-weight:700">🎯 停利（點）</span>
+              <input type="number" class="config-input" id="s1TP" value="10" min="0" style="width:56px">
+            </div>
+            <div class="config-row">
+              <span class="config-label" style="color:var(--green2);font-weight:700">🛡️ 停損（點）</span>
+              <input type="number" class="config-input" id="s1SL" value="5" min="0" style="width:56px">
+            </div>
+            <div class="config-row">
+              <span class="config-label">出場模式</span>
+              <select class="config-select" id="s1ExitMode">
+                <option value="tpsl">停利/停損</option>
+                <option value="close">收盤出場</option>
+                <option value="peak">最高價出場</option>
+              </select>
+            </div>
+            <div class="config-row">
+              <span class="config-label">⏰ 掃描時段</span>
+              <div class="config-value">
+                <input type="time" class="config-input" id="s1TimeStart" value="08:45:00" step="1" style="width:85px;font-size:12px">
+                <span style="color:var(--text3)">～</span>
+                <input type="time" class="config-input" id="s1TimeEnd" value="13:44:00" step="1" style="width:85px;font-size:12px">
+              </div>
+            </div>
+            <div class="config-row">
+              <span class="config-label">最大持倉數</span>
+              <input type="number" class="config-input" id="s1MaxPos" value="10" min="1" style="width:56px">
+            </div>
+            <div class="config-row">
+              <span class="config-label">每檔僅一次</span>
+              <div class="toggle"><input type="checkbox" id="s1OncePerStrike" checked><span class="toggle-slider"></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="section" id="s1Cards" style="display:none">
+        <div class="section-label">損益摘要</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">CALL 開倉</div>
+            <div class="stat-value red" id="s1CallCount">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">PUT 開倉</div>
+            <div class="stat-value green" id="s1PutCount">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">CALL 損益</div>
+            <div class="stat-value" id="s1CallPnl">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">PUT 損益</div>
+            <div class="stat-value" id="s1PutPnl">—</div>
+          </div>
+          <div class="stat-card full">
+            <div class="stat-label">合計損益</div>
+            <div class="stat-value" id="s1TotalPnl">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="s1TblWrap" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="section-label" style="margin:0">委託明細</span>
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="s1FilledCount">0</span>
+        </div>
+        <div class="card" style="overflow-x:auto;max-height:400px;overflow-y:auto">
+          <table class="ao-table">
+            <thead><tr>
+              <th>狀態</th><th>方向</th><th>履約</th><th>進場</th><th>停利/損</th><th>現價</th><th>損益</th><th>原因</th>
+            </tr></thead>
+            <tbody id="s1Body">
+              <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">啟動後開始回測即會顯示</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="section" id="statWinner" style="display:none">
+        <div class="section-label">🏆 排行榜</div>
+        <div class="card">
+          <div class="card-body-compact" id="statWinnerRow">—</div>
+          <table class="ao-table" id="statRankTbl"></table>
+        </div>
+      </div>
+
+      <div class="section" id="statPattern" style="display:none">
+        <div class="section-label">📊 盤型分析</div>
+        <div class="card">
+          <div class="card-body-compact">
+            <div id="statPatternBadge" style="margin-bottom:6px"></div>
+            <div id="statPatternDetail" class="info-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="statSub20" style="display:none">
+        <div class="section-label">📉 觸及停損</div>
+        <div class="card" style="overflow-x:auto">
+          <table class="ao-table">
+            <thead><tr><th>方向</th><th>履約</th><th>觸及價</th><th>時間</th></tr></thead>
+            <tbody id="statSub20Body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottomnav">
+    <button class="nav-item active" data-page="pageHome">
+      <span class="nav-icon">🏠</span>
+      <span>首頁</span>
+    </button>
+    <button class="nav-item" data-page="pageChain">
+      <span class="nav-icon">📋</span>
+      <span>報價</span>
+    </button>
+    <button class="nav-item" data-page="pageChart">
+      <span class="nav-icon">📈</span>
+      <span>圖表</span>
+    </button>
+    <button class="nav-item" data-page="pageOrder">
+      <span class="nav-icon">💰</span>
+      <span>下單</span>
+    </button>
+    <button class="nav-item" data-page="pageAuto">
+      <span class="nav-icon">🤖</span>
+      <span>策略</span>
+    </button>
+  </div>
+</div>
+
+
+<script>
+// ═══════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════
+{
+  const overlay=document.getElementById('onboard'), app=document.getElementById('app');
+  const steps=overlay.querySelectorAll('.onboard-step'), dots=overlay.querySelectorAll('.onboard-dot');
+  const nextBtn=document.getElementById('onboardNext'), skipBtn=document.getElementById('onboardSkip');
+  let cur=0;
+  function goStep(n){
+    steps[cur].classList.remove('active'); steps[cur].classList.add('exit'); dots[cur].classList.remove('active');
+    cur=n;
+    steps[cur].classList.remove('exit'); steps[cur].classList.add('active'); dots[cur].classList.add('active');
+    nextBtn.textContent=cur===steps.length-1?'開始使用':'下一步';
+  }
+  function finishOnboard(){ overlay.classList.add('hidden'); app.classList.add('active'); setTimeout(()=>overlay.style.display='none',500); }
+  nextBtn.addEventListener('click',()=>{ if(cur<steps.length-1) goStep(cur+1); else finishOnboard(); });
+  skipBtn.addEventListener('click',finishOnboard);
+}
+
+// ═══════════════════════════════════
+// BOTTOM NAV
+// ═══════════════════════════════════
+{
+  const navItems=document.querySelectorAll('.nav-item'), pages=document.querySelectorAll('.page');
+  navItems.forEach(item=>{
+    item.addEventListener('click',()=>{
+      const target=item.dataset.page;
+      navItems.forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
+      pages.forEach(p=>p.classList.toggle('active',p.id===target));
+      document.getElementById('pageContent').scrollTop=0;
+      if(target==='pageChart') setTimeout(()=>{ try{chartTA.resize()}catch(_){} try{chartTrend.resize()}catch(_){} },60);
+    });
+  });
+}
+
+// ═══════════════════════════════════
+// CORE ENGINE — FULL PORT FROM ORIGINAL
+// ═══════════════════════════════════
+const chartTA=echarts.init(document.getElementById('chartTA'));
+const chartTrend=echarts.init(document.getElementById('chartTrend'));
+let activeChartTab='ta';
+
+let _kinfoUserHover=false;
+let _kinfoMode='txo'; // 'txo' or 'tx'
+
+// ── 用 DOM 事件可靠偵測游標是否在圖表上 ──
+// 比 ECharts showTip/hideTip 更穩定，不受回測 tick 干擾
+{
+  const chartContainer=document.getElementById('chartTA');
+  chartContainer.addEventListener('mouseenter',()=>{ _kinfoUserHover=true; });
+  chartContainer.addEventListener('mouseleave',()=>{ _kinfoUserHover=false; });
+  chartContainer.addEventListener('touchstart',()=>{ _kinfoUserHover=true; }, {passive:true});
+  chartContainer.addEventListener('touchend',  ()=>{ _kinfoUserHover=false; }, {passive:true});
+  chartContainer.addEventListener('touchcancel',()=>{ _kinfoUserHover=false; }, {passive:true});
+}
+
+// ── 集中管理 kinfo 更新，所有地方都呼叫這裡 ──
+function updateKinfoLast(){
+  if(_kinfoMode==='tx'){
+    if(!_txKinfoKdata.length) return;
+    const last=_txKinfoKdata[_txKinfoKdata.length-1];
+    const cc=last[1]>=last[0]?'#ff1744':'#00e676';
+    kinfo.innerHTML=`<span style="color:var(--gold)">TX</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${last[0]}</b>&ensp;高&nbsp;<b>${last[3]}</b>&ensp;低&nbsp;<b>${last[2]}</b>&ensp;收&nbsp;<b>${last[1]}</b></span>${_txKinfoCutoff?' &ensp;<span style="color:var(--text3)">'+fmtTime(_txKinfoCutoff)+'</span>':''}`;
+  } else {
+    if(!_kinfoKdata.length) return;
+    const last=_kinfoKdata[_kinfoKdata.length-1], lastVol=_kinfoVolumes[_kinfoVolumes.length-1];
+    const cc=last[1]>=last[0]?'#ff1744':'#00e676';
+    kinfo.innerHTML=`<span style="color:${cc}">開&nbsp;<b>${last[0]}</b>&ensp;高&nbsp;<b>${last[3]}</b>&ensp;低&nbsp;<b>${last[2]}</b>&ensp;收&nbsp;<b>${last[1]}</b></span>&ensp;<span style="color:var(--text3)">量&nbsp;</span>${lastVol}${_kinfoCutoff?' &ensp;<span style="color:var(--text3)">'+fmtTime(_kinfoCutoff)+'</span>':''}`;
+  }
+}
+
+// ── ECharts 事件只綁一次 ──
+chartTA.on('showTip',(params)=>{
+  if(!_kinfoUserHover) return; // 不在圖表上（回測自動觸發的）略過
+  const arr=_kinfoMode==='tx'?_txKinfoKdata:_kinfoKdata;
+  const vols=_kinfoMode==='tx'?null:_kinfoVolumes;
+  const idx=params.dataIndex; if(idx==null||!arr[idx]) return;
+  const k=arr[idx]; const vol=vols?vols[idx]:'';
+  const cc=k[1]>=k[0]?'#ff1744':'#00e676';
+  const t=params.axisValueLabel||'';
+  if(_kinfoMode==='tx'){
+    kinfo.innerHTML=`<span style="color:var(--gold)">TX</span>&ensp;<span style="color:var(--text3)">${t}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>`;
+  } else {
+    kinfo.innerHTML=`<span style="color:var(--text3)">${t}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>&ensp;<span style="color:var(--text3)">量&nbsp;</span>${vol}`;
+  }
+});
+chartTA.on('hideTip', ()=>{ updateKinfoLast(); });
+chartTA.on('globalout', ()=>{ updateKinfoLast(); });
+
+const expirySelect=document.getElementById('expirySelect');
+const strikeSelect=document.getElementById('strikeSelect');
+const typeSelect=document.getElementById('typeSelect');
+const sessionSelect=document.getElementById('sessionSelect');
+const periodSelect=document.getElementById('periodSelect');
+const kinfo=document.getElementById('kinfo');
+const tBody=document.getElementById('tBody');
+
+// Chart tabs
+const tabTA=document.getElementById('tabTA'), tabTrend=document.getElementById('tabTrend');
+function setChartTab(tab){
+  activeChartTab=tab;
+  tabTA.classList.toggle('active',tab==='ta');
+  tabTrend.classList.toggle('active',tab==='trend');
+  document.getElementById('chartTA').style.visibility=tab==='ta'?'visible':'hidden';
+  document.getElementById('chartTrend').style.visibility=tab==='trend'?'visible':'hidden';
+  renderChart(cutoffTime);
+}
+tabTA.addEventListener('click',()=>setChartTab('ta'));
+tabTrend.addEventListener('click',()=>setChartTab('trend'));
+
+// BT controls
+const btStart=document.getElementById('btStart'), btPause=document.getElementById('btPause');
+const btResume=document.getElementById('btResume'), btStop=document.getElementById('btStop');
+const btStep=document.getElementById('btStep'), btStepBack=document.getElementById('btStepBack');
+const btStepSec=document.getElementById('btStepSec'), btCalcSpeed=document.getElementById('btCalcSpeed');
+const btProgress=document.getElementById('btProgress'), btClock=document.getElementById('btClock');
+const btSetTime=document.getElementById('btSetTime'), btJump=document.getElementById('btJump');
+
+// Order & account DOM
+const qtyInput=document.getElementById('qtyInput'), multInput=document.getElementById('multInput');
+const feeInput=document.getElementById('feeInput'), allowShort=document.getElementById('allowShort');
+const btnBuy=document.getElementById('btnBuy'), btnSell=document.getElementById('btnSell');
+const symNow=document.getElementById('symNow'), lastPx=document.getElementById('lastPx');
+const chartName=document.getElementById('chartName');
+const ltSide=document.getElementById('ltSide'), ltPrice=document.getElementById('ltPrice');
+const ltQty=document.getElementById('ltQty'), btnPlaceLimit=document.getElementById('btnPlaceLimit');
+const ltWorkingCnt=document.getElementById('ltWorkingCnt');
+const riskMaxQty=document.getElementById('riskMaxQty'), riskEquityStop=document.getElementById('riskEquityStop');
+
+// Auto order DOM
+const bt20Run=document.getElementById('bt20Run'), bt20Stop=document.getElementById('bt20Stop');
+const s1Body=document.getElementById('s1Body'), s1Cards=document.getElementById('s1Cards');
+const s1TblWrap=document.getElementById('s1TblWrap'), s1Status=document.getElementById('s1Status');
+const s1FilledCount=document.getElementById('s1FilledCount');
+const s1CallPnl=document.getElementById('s1CallPnl'), s1PutPnl=document.getElementById('s1PutPnl');
+const s1TotalPnl=document.getElementById('s1TotalPnl');
+const s1CallCount=document.getElementById('s1CallCount'), s1PutCount=document.getElementById('s1PutCount');
+const topStatus=document.getElementById('topStatus');
+
+// ====== MA（均線）設定 ======
+const MA_COLOR_PRESET={5:'#f1c40f',10:'#00bcd4',20:'#e91e63',60:'#9c27b0',120:'#ff9800'};
+const MA_COLOR_PALETTE=['#f1c40f','#00bcd4','#e91e63','#9c27b0','#ff9800','#4caf50','#2196f3','#ff5722','#607d8b','#cddc39'];
+function maColor(period,idx){ return MA_COLOR_PRESET[period]||MA_COLOR_PALETTE[idx%MA_COLOR_PALETTE.length]; }
+
+// Mobile: default MA periods (no checkbox UI, simplified)
+let currentMAPeriods=[5,10,20];
+function getMAPeriods(){ return currentMAPeriods; }
+function getMAColorMap(){
+  const map={};
+  currentMAPeriods.forEach((p,i)=>{ map[p]=maColor(p,i); });
+  return map;
+}
+function calcMA(period,values){
+  const out=new Array(values.length).fill(null);
+  let sum=0;
+  for(let i=0;i<values.length;i++){
+    const v=Number(values[i]);
+    if(!Number.isFinite(v)){ out[i]=null; continue; }
+    sum+=v;
+    if(i>=period){ const drop=Number(values[i-period]); if(Number.isFinite(drop)) sum-=drop; }
+    if(i>=period-1) out[i]=+(sum/period).toFixed(3);
+  }
+  return out;
+}
+
+// ====== State ======
+let rawData=[], txRawData=[];
+let isDark=true; // mobile is always dark
+let typeAliases={call:null,put:null};
+let selectedSide=null;
+let currentChartMode='txo'; // 'txo' | 'tx'
+let prevTTablePrices=new Map();
+let trendChartInited=false, trendChartKey='';
+let _txKinfoKdata=[], _txKinfoCutoff=null;
+let taChartInited=false, taChartKey='';
+let _kinfoKdata=[], _kinfoVolumes=[], _kinfoCutoff=null;
+let playTimes=[], playIndex=0, playTimer=null, playing=false;
+let cutoffTime=null, simTime=null;
+const lastTypeSelectionMap={};
+let dataIndex=new Map(), txDataIndex=[];
+
+// Auto order state
+let autoOrderActive=false, autoOrderPositions=[], autoOrderEnteredKeys=new Set();
+
+// Account
+const account={initCash:1000000, cash:1000000, realized:0, positions:new Map(), orders:[]};
+const limits=[];
+let ltSeq=1;
+
+// ====== Utils ======
+const keyOf=(expiry,strike,type)=>`${expiry}|${strike}|${type}`;
+const fmtNum=(n,p=0)=>(isFinite(n)?Number(n).toLocaleString(undefined,{maximumFractionDigits:p}):'—');
+const numberOrDash=(x)=>(x==null||isNaN(x)?'—':x);
+
+function buildDataIndex(){
+  dataIndex.clear();
+  for(const d of rawData){
+    const k=keyOf(d.expiry,d.strike,d.type);
+    let arr=dataIndex.get(k);
+    if(!arr){ arr=[]; dataIndex.set(k,arr); }
+    arr.push(d);
+  }
+  dataIndex.forEach(arr=>arr.sort((a,b)=>a.dtms-b.dtms));
+  txDataIndex=txRawData.slice().sort((a,b)=>a.dtms-b.dtms);
+}
+
+function sanitizeTimeStr(s){ return(s||'').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6); }
+function makeDateObj(dateStr,timeStr){
+  const t=sanitizeTimeStr(timeStr);
+  const y=dateStr.slice(0,4),m=dateStr.slice(4,6),d=dateStr.slice(6,8);
+  return new Date(`${y}-${m}-${d}T${t.slice(0,2)}:${t.slice(2,4)}:${t.slice(4,6)||'00'}`);
+}
+function withinSession(tstr){
+  const t=sanitizeTimeStr(tstr), sess=sessionSelect.value;
+  if(sess==='全部') return true;
+  if(sess==='一般') return t>='084500'&&t<='134500';
+  if(sess==='盤後') return(t>='150000'||t<='050000');
+  return true;
+}
+function fmtTime(dt){ const p=n=>String(n).padStart(2,'0'); return `${p(dt.getHours())}:${p(dt.getMinutes())}:${p(dt.getSeconds())}`; }
+function hhmmss(dt){ const p=n=>String(n).padStart(2,'0'); return `${p(dt.getHours())}${p(dt.getMinutes())}${p(dt.getSeconds())}`; }
+function findIndexByTimeStr(hms){
+  const t=(hms||'').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6);
+  if(!playTimes.length) return -1;
+  let idx=playTimes.findIndex(dt=>hhmmss(dt)>=t);
+  return idx===-1?playTimes.length-1:idx;
+}
+function detectTypeAliasesForExpiry(expiry){
+  const types=new Set();
+  dataIndex.forEach((arr,k)=>{ if(k.startsWith(expiry+'|')&&arr.length) types.add(k.split('|')[2]); });
+  const arr=Array.from(types);
+  let call=null,put=null;
+  for(const t of arr){ const u=t.toUpperCase(); if(!call&&(u==='C'||u.includes('CALL')||u.includes('買'))) call=t; if(!put&&(u==='P'||u.includes('PUT')||u.includes('賣'))) put=t; }
+  if(!call&&arr.length) call=arr[0];
+  if(!put&&arr.length) put=arr.find(x=>x!==call)||arr[0];
+  return{call,put};
+}
+function getLastPrice(expiry,strike,type,cutoff){
+  const arr=dataIndex.get(keyOf(expiry,strike,type));
+  if(!arr||!arr.length) return null;
+  const sess=sessionSelect.value;
+  const cutMs=cutoff?+cutoff:Infinity;
+  for(let i=arr.length-1;i>=0;i--){
+    const d=arr[i];
+    if(d.dtms>cutMs) continue;
+    if(sess!=='全部'&&!withinSession(d.time)) continue;
+    return d.price;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════
+// FILE LOADING (identical to original)
+// ═══════════════════════════════════
+let folderFiles=[], dateFileMap=new Map();
+const dateSelect=document.getElementById('dateSelect');
+const loadStatus=document.getElementById('loadStatus');
+
+const decodeGuess=(buf)=>{
+  const stripBom=(s)=>(s||'').replace(/^\uFEFF/,'');
+  const hasKey=(s)=>s&&(s.includes('成交日期')||s.includes('交易日期')||s.includes('商品代號'));
+  const tryDec=(enc)=>{ try{return new TextDecoder(enc,{fatal:false}).decode(buf)}catch(_){return null} };
+  let t=stripBom(tryDec('utf-8'));
+  if(hasKey(t)) return t;
+  t=stripBom(tryDec('big5'))||stripBom(tryDec('cp950'))||t||'';
+  return t;
+};
+const readRPTEntry=async(zip,name)=>{ const buf=await zip.files[name].async('arraybuffer'); return decodeGuess(buf); };
+
+document.getElementById('folderInput').addEventListener('change',async(e)=>{
+  folderFiles=Array.from(e.target.files||[]); if(!folderFiles.length) return;
+  dateFileMap.clear();
+  dateSelect.innerHTML='<option value="">解析中...</option>'; dateSelect.disabled=true;
+  loadStatus.textContent=`掃描 ${folderFiles.length} 個檔案...`;
+  document.getElementById('dateSection').style.display='';
+
+  const dateRe_opt=/^OptionsDaily[_\-]?(\d{4})[_\-](\d{2})[_\-](\d{2})/i;
+  const dateRe_fut=/^Daily[_\-]?(\d{4})[_\-](\d{2})[_\-](\d{2})/i;
+  for(const file of folderFiles){
+    const name=file.name||''; let m,dateKey,kind;
+    m=name.match(dateRe_opt); if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`; kind='op';}
+    else{ m=name.match(dateRe_fut); if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`; kind='fu';} }
+    if(!dateKey) continue;
+    if(!dateFileMap.has(dateKey)) dateFileMap.set(dateKey,{op:[],fu:[]});
+    dateFileMap.get(dateKey)[kind].push(file);
+  }
+  const dates=Array.from(dateFileMap.keys()).sort((a,b)=>b.localeCompare(a));
+  if(!dates.length){ dateSelect.innerHTML='<option value="">未找到符合的資料</option>'; loadStatus.textContent='未偵測到 OptionsDaily / Daily 命名的檔案'; return; }
+  dateSelect.innerHTML='<option value="">— 請選擇交易日 —</option>'+dates.map(d=>{
+    const info=dateFileMap.get(d); const tag=info.op.length&&info.fu.length?'✓OP+FU':info.op.length?'OP':'FU';
+    return `<option value="${d}">${d.replace(/_/g,'/')}（${tag}）</option>`;
+  }).join('');
+  dateSelect.disabled=false;
+  loadStatus.textContent=`找到 ${dates.length} 個交易日`;
+});
+
+dateSelect.addEventListener('change',async()=>{
+  const dateKey=dateSelect.value; if(!dateKey) return;
+  const info=dateFileMap.get(dateKey); if(!info) return;
+  loadStatus.textContent='載入中...'; dateSelect.disabled=true;
+  topStatus.textContent='載入中'; topStatus.className='topbar-status running';
+
+  let rows=[];
+  const appendLines=(text)=>{ if(text) text.split(/\r?\n/).forEach(l=>rows.push(l)); };
+  for(const file of[...info.op,...info.fu]){
+    const name=(file.name||'').toLowerCase();
+    if(name.endsWith('.zip')){
+      try{ const zip=await JSZip.loadAsync(file); const entries=Object.keys(zip.files).filter(n=>n.toLowerCase().endsWith('.rpt')&&!zip.files[n].dir);
+        for(const rptName of entries) appendLines(await readRPTEntry(zip,rptName));
+      }catch(err){console.warn('ZIP error:',file.name,err);}
+    }else if(name.endsWith('.rpt')){
+      try{appendLines(decodeGuess(await file.arrayBuffer()));}catch(err){console.warn('RPT error:',file.name,err);}
+    }
+  }
+
+  // Parse TXO
+  rawData=rows.map(l=>l.trim().split(',').map(s=>s.trim())).filter(d=>d.length>=8&&d[1]==='TXO')
+    .map(d=>{const dt=makeDateObj(d[0],d[5]); return{date:d[0],product:d[1],strike:d[2],expiry:d[3],type:d[4],time:d[5],dtms:+dt,price:parseFloat(d[6]),volume:parseInt(d[7]),openFlag:d[8]||''};})
+    .filter(d=>!isNaN(d.price)&&!isNaN(d.volume));
+
+  // Parse TX futures
+  txRawData=rows.map(l=>l.trim().split(',').map(s=>s.trim()))
+    .filter(d=>{if(d.length<5) return false; const p=(d[1]||'').toUpperCase(); return(p==='TX'||p==='MTX'||p==='TXF')&&p!=='TXO';})
+    .map(d=>{
+      let time,price,volume,expiry; const isFut=/^\d{6}$/.test(d[2]||'');
+      if(isFut){expiry=d[2];time=d[3]||'';price=parseFloat(d[4]);volume=parseInt(d[5])||0;}
+      else{expiry=d[3]||'';time=d[5]||'';price=parseFloat(d[6]);volume=parseInt(d[7])||0;}
+      return{date:d[0],product:d[1],expiry:(expiry||'').replace(/\s/g,''),time,dtms:+makeDateObj(d[0],time),price,volume};
+    }).filter(d=>!isNaN(d.price)&&d.price>0);
+
+  buildDataIndex();
+  resetAccount(); prevTTablePrices.clear();
+  trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
+  cutoffTime=null; simTime=null;
+  autoOrderActive=false; autoOrderPositions=[]; autoOrderEnteredKeys=new Set();
+  s1Status.textContent='未啟動'; s1Status.className='status-badge closed';
+  bt20Run.style.display=''; bt20Stop.style.display='none';
+  s1Cards.style.display='none'; s1TblWrap.style.display='none';
+  document.getElementById('statWinner').style.display='none';
+  document.getElementById('statPattern').style.display='none';
+  document.getElementById('statSub20').style.display='none';
+
+  if(rawData.length){ updateSelectors(); rebuildPlayTimes(); renderChart(); rebuildTTable(); }
+  updateTXBar(); updateBtUI(); updateAccountUI();
+
+  const dateLabel=dateKey.replace(/_/g,'/');
+  loadStatus.textContent=`${dateLabel}：OP ${rawData.length.toLocaleString()} 筆 / FU ${txRawData.length.toLocaleString()} 筆`;
+  dateSelect.disabled=false;
+  document.getElementById('selectorSection').style.display=rawData.length?'':'none';
+  document.getElementById('btSection').style.display=rawData.length?'':'none';
+  document.getElementById('txBarChain').style.display=txRawData.length?'':'none';
+  topStatus.textContent='已載入'; topStatus.className='topbar-status loaded';
+});
+
+// ═══════════════════════════════════
+// SELECTORS (faithful port)
+// ═══════════════════════════════════
+function updateSelectors(){
+  const expiries=[...new Set(rawData.map(d=>d.expiry))].sort();
+  expirySelect.innerHTML=expiries.map(e=>`<option value="${e}">${e}</option>`).join('');
+  let best=expiries[0]||'';
+  if(expiries.length>1){
+    const volMap=new Map();
+    dataIndex.forEach((arr,k)=>{const exp=k.split('|')[0]; let v=0; for(const d of arr) v+=(d.volume||0); volMap.set(exp,(volMap.get(exp)||0)+v);});
+    let maxV=-1; for(const exp of expiries){const v=volMap.get(exp)||0; if(v>maxV){maxV=v;best=exp;}}
+  }
+  expirySelect.value=best;
+  typeAliases=detectTypeAliasesForExpiry(best);
+  updateStrikes();
+}
+
+function updateStrikes(){
+  const expiry=expirySelect.value;
+  const sset=new Set();
+  dataIndex.forEach((arr,k)=>{if(k.startsWith(expiry+'|')&&arr.length) sset.add(k.split('|')[1]);});
+  const strikes=Array.from(sset).sort((a,b)=>parseFloat(a)-parseFloat(b));
+  strikeSelect.innerHTML=strikes.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const callT=typeAliases?.call??'C', putT=typeAliases?.put??'P';
+  const both=strikes.filter(s=>(dataIndex.has(keyOf(expiry,s,callT))||dataIndex.has(keyOf(expiry,s,'C')))&&(dataIndex.has(keyOf(expiry,s,putT))||dataIndex.has(keyOf(expiry,s,'P'))));
+  strikeSelect.value=both.length?both[Math.floor(both.length/2)]:strikes[Math.floor(strikes.length/2)]||'';
+  updateTypes();
+}
+
+function updateTypes(){
+  const expiry=expirySelect.value, strike=strikeSelect.value;
+  const callT=typeAliases?.call??'C', putT=typeAliases?.put??'P';
+  const set=new Set();
+  if(dataIndex.has(keyOf(expiry,strike,callT))) set.add(callT);
+  if(dataIndex.has(keyOf(expiry,strike,putT))) set.add(putT);
+  if(callT!=='C'&&dataIndex.has(keyOf(expiry,strike,'C'))) set.add('C');
+  if(putT!=='P'&&dataIndex.has(keyOf(expiry,strike,'P'))) set.add('P');
+  const choices=[]; if(callT) choices.push(callT); if(putT&&putT!==callT) choices.push(putT);
+  typeSelect.innerHTML=choices.map(t=>{
+    const disabled=!set.has(t);
+    return `<option value="${t}" ${disabled?'disabled':''}>${t}${disabled?'（無成交）':''}</option>`;
+  }).join('');
+  const key=`${expiry}_${strike}`, remembered=lastTypeSelectionMap[key];
+  const canUse=choices.includes(remembered)&&set.has(remembered);
+  if(canUse) typeSelect.value=remembered;
+  else{ const first=choices.find(t=>set.has(t))||choices[0]||''; typeSelect.value=first; }
+  renderChart(cutoffTime); highlightTSelected(); updateAccountUI();
+}
+
+function moveStrike(offset){
+  const opts=Array.from(strikeSelect.options);
+  const idx=opts.findIndex(o=>o.value===strikeSelect.value);
+  if(idx+offset>=0&&idx+offset<opts.length){ strikeSelect.value=opts[idx+offset].value; updateTypes(); highlightTSelected(); }
+}
+document.getElementById('prevStrikeBtn').addEventListener('click',()=>moveStrike(-1));
+document.getElementById('nextStrikeBtn').addEventListener('click',()=>moveStrike(1));
+
+expirySelect.addEventListener('change',()=>{
+  typeAliases=detectTypeAliasesForExpiry(expirySelect.value);
+  updateStrikes(); rebuildPlayTimes(); stopPlayback();
+  cutoffTime=null; simTime=null; trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
+  prevTTablePrices.clear(); renderChart(); rebuildTTable(); updateAccountUI();
+});
+strikeSelect.addEventListener('change',updateTypes);
+typeSelect.addEventListener('change',()=>{
+  const key=`${expirySelect.value}_${strikeSelect.value}`;
+  lastTypeSelectionMap[key]=typeSelect.value;
+  currentChartMode='txo';
+  renderChart(cutoffTime); highlightTSelected(); updateAccountUI();
+});
+sessionSelect.addEventListener('change',()=>{
+  rebuildPlayTimes(); stopPlayback(); cutoffTime=null; simTime=null;
+  renderChart(); rebuildTTable(); updateAccountUI();
+});
+periodSelect.addEventListener('change',()=>{
+  taChartInited=false; taChartKey=''; renderChart(cutoffTime);
+});
+
+// ═══════════════════════════════════
+// T-TABLE (Full 7-column from original with ATM, N20, change, VWAP)
+// ═══════════════════════════════════
+function rebuildTTable(cutoff=null){
+  const expiry=expirySelect.value;
+  if(!expiry){tBody.innerHTML=''; return;}
+
+  // ── Scroll anchor: remember which strike row is visible at center ──
+  const container=tBody.closest('.ttable-wrap');
+  let anchorStrike=null, anchorOffsetFromTop=0;
+  if(container){
+    const scrollTop=container.scrollTop;
+    const centerY=scrollTop+container.clientHeight/2;
+    const trs=tBody.querySelectorAll('tr[data-strike]');
+    for(const tr of trs){
+      const top=tr.offsetTop, h=tr.offsetHeight;
+      if(top+h>=centerY){
+        anchorStrike=tr.dataset.strike;
+        anchorOffsetFromTop=top-scrollTop;
+        break;
+      }
+    }
+  }
+
+  const callStr=typeAliases.call, putStr=typeAliases.put;
+  const cutMs=cutoff?+cutoff:Infinity;
+  const sess=sessionSelect.value;
+
+  const map=new Map(), strikesSet=new Set();
+  dataIndex.forEach((arr,k)=>{
+    const parts=k.split('|'); if(parts[0]!==expiry) return;
+    const strike=parts[1], type=parts[2], mapKey=`${strike}|${type}`;
+    let o=null;
+    for(const r of arr){
+      if(r.dtms>cutMs) break;
+      if(sess!=='全部'&&!withinSession(r.time)) continue;
+      strikesSet.add(strike);
+      const vol=r.volume||0;
+      if(!o){o={last:r.price,lastDtms:r.dtms,vol:vol,vwap_num:r.price*vol};}
+      else{o.vol+=vol; o.vwap_num+=r.price*vol; if(r.dtms>=o.lastDtms){o.last=r.price;o.lastDtms=r.dtms;}}
+    }
+    if(o) map.set(mapKey,o);
+  });
+
+  const strikes=Array.from(strikesSet).sort((a,b)=>parseFloat(a)-parseFloat(b));
+  const rows=[];
+  for(const s of strikes){
+    const c=map.get(`${s}|${callStr}`), p=map.get(`${s}|${putStr}`);
+    rows.push({strike:s,cPrice:c?.last,cVol:c?.vol,pPrice:p?.last,pVol:p?.vol});
+  }
+
+  // ATM detection (TX price based)
+  let atmStrike=null;
+  {
+    let txLastPx=null;
+    if(txDataIndex.length){
+      const currentExpiry=(expirySelect.value||'').replace(/\s/g,'');
+      const currentYM=currentExpiry.slice(0,6); // e.g. "202501"
+
+      // 1) Try exact expiry match
+      for(let i=txDataIndex.length-1;i>=0;i--){
+        const d=txDataIndex[i];
+        if(cutoff&&d.dtms>+cutoff) continue;
+        if(!withinSession(d.time)) continue;
+        const dExp=(d.expiry||'').replace(/\s/g,'');
+        if(dExp===currentExpiry){txLastPx=d.price; break;}
+      }
+      // 2) Fallback: same year-month prefix (TX monthly vs TXO weekly)
+      if(txLastPx==null&&currentYM){
+        for(let i=txDataIndex.length-1;i>=0;i--){
+          const d=txDataIndex[i];
+          if(cutoff&&d.dtms>+cutoff) continue;
+          if(!withinSession(d.time)) continue;
+          const dExp=(d.expiry||'').replace(/\s/g,'');
+          if(dExp.slice(0,6)===currentYM){txLastPx=d.price; break;}
+        }
+      }
+      // 3) Fallback: next available expiry
+      if(txLastPx==null){
+        for(let i=txDataIndex.length-1;i>=0;i--){
+          const d=txDataIndex[i];
+          if(cutoff&&d.dtms>+cutoff) continue;
+          if(!withinSession(d.time)) continue;
+          txLastPx=d.price; break;
+        }
+      }
+    }
+    if(txLastPx!=null){
+      let minDiff=Infinity;
+      for(const r of rows){const diff=Math.abs(parseFloat(r.strike)-txLastPx); if(diff<minDiff){minDiff=diff;atmStrike=r.strike;}}
+    }else{
+      let minDiff=Infinity;
+      for(const r of rows){if(r.cPrice!=null&&r.pPrice!=null){const diff=Math.abs(r.cPrice-r.pPrice); if(diff<minDiff){minDiff=diff;atmStrike=r.strike;}}}
+    }
+  }
+
+  // Near-20 detection
+  const NEAR20_TARGET=20, NEAR20_MAX_ABS=5;
+  let near20C=null, near20P=null;
+  for(const r of rows){
+    if(r.cPrice!=null&&isFinite(r.cPrice)){const d=Math.abs(r.cPrice-NEAR20_TARGET); if(d<=NEAR20_MAX_ABS&&(!near20C||d<near20C.d)) near20C={strike:r.strike,d};}
+    if(r.pPrice!=null&&isFinite(r.pPrice)){const d=Math.abs(r.pPrice-NEAR20_TARGET); if(d<=NEAR20_MAX_ABS&&(!near20P||d<near20P.d)) near20P={strike:r.strike,d};}
+  }
+
+  // Change tracking
+  const newPrices=new Map();
+  for(const r of rows){
+    if(r.cPrice!=null) newPrices.set(`${r.strike}|C`,r.cPrice);
+    if(r.pPrice!=null) newPrices.set(`${r.strike}|P`,r.pPrice);
+  }
+  for(const r of rows){
+    r._atm=(atmStrike!=null&&r.strike==atmStrike);
+    r._n20c=!!(near20C&&r.strike==near20C.strike);
+    r._n20p=!!(near20P&&r.strike==near20P.strike);
+    const prevC=prevTTablePrices.get(`${r.strike}|C`), prevP=prevTTablePrices.get(`${r.strike}|P`);
+    r.cChg=(r.cPrice!=null&&prevC!=null)?+(r.cPrice-prevC).toFixed(1):null;
+    r.pChg=(r.pPrice!=null&&prevP!=null)?+(r.pPrice-prevP).toFixed(1):null;
+  }
+  prevTTablePrices=newPrices;
+
+  function chgHtml(v){
+    if(v==null||!isFinite(v)) return '';
+    if(v>0) return `<span class="red">+${v}</span>`;
+    if(v<0) return `<span class="green">${v}</span>`;
+    return '<span style="color:var(--text3)">0</span>';
+  }
+
+  tBody.innerHTML=rows.map(r=>{
+    const rowCls=[r._atm?'n20-row-both':'',r._n20c&&r._n20p&&!r._atm?'n20-row-both':''].filter(Boolean).join(' ');
+    const tags=[
+      r._atm?'<span class="tag-atm">ATM</span>':'',
+      r._n20c?'<span class="tag-n20c">C≈20</span>':'',
+      r._n20p?'<span class="tag-n20p">P≈20</span>':''
+    ].filter(Boolean).join(' ');
+    const c01=(r.cPrice!=null&&Math.abs(r.cPrice-0.1)<0.0001)?' price-01':'';
+    const p01=(r.pPrice!=null&&Math.abs(r.pPrice-0.1)<0.0001)?' price-01':'';
+    return `<tr data-strike="${r.strike}" class="${rowCls}">
+      <td style="font-size:13px;color:var(--text3)">${numberOrDash(r.cVol)}</td>
+      <td class="td-c${r._n20c?' n20c':''}${c01}" data-side="C" data-strike="${r.strike}"><span class="${r.cChg>0?'red':r.cChg<0?'green':''}">${numberOrDash(r.cPrice)}</span></td>
+      <td class="strike-cell" data-strike="${r.strike}">${r.strike}${tags?'<br><span style="font-size:10px">'+tags+'</span>':''}</td>
+      <td class="td-p${r._n20p?' n20p':''}${p01}" data-side="P" data-strike="${r.strike}"><span class="${r.pChg>0?'red':r.pChg<0?'green':''}">${numberOrDash(r.pPrice)}</span></td>
+      <td style="font-size:13px;color:var(--text3)">${numberOrDash(r.pVol)}</td>
+    </tr>`;
+  }).join('');
+
+  highlightTSelected();
+
+  // ── Scroll restore: put the anchor strike back at the same visual position ──
+  if(container&&anchorStrike){
+    const anchorRow=tBody.querySelector(`tr[data-strike="${anchorStrike}"]`);
+    if(anchorRow){
+      container.scrollTop=anchorRow.offsetTop-anchorOffsetFromTop;
+    }
+  }
+}
+
+let _prevSelTR=null;
+function highlightTSelected(){
+  const strike=strikeSelect.value;
+  if(_prevSelTR) _prevSelTR.classList.remove('sel');
+  const tr=tBody.querySelector(`tr[data-strike="${strike}"]`);
+  if(tr) tr.classList.add('sel');
+  _prevSelTR=tr;
+}
+
+// T-Table click delegation
+tBody.addEventListener('click',(e)=>{
+  const td=e.target.closest('td'); if(!td) return;
+  if(td.classList.contains('td-c')||td.classList.contains('td-p')){
+    const strike=td.dataset.strike, side=td.dataset.side; if(!strike||!side) return;
+    selectedSide=side; strikeSelect.value=strike;
+    const wantType=side==='C'?typeAliases.call:typeAliases.put;
+    if(wantType) typeSelect.value=wantType;
+    const key=`${expirySelect.value}_${strike}`; lastTypeSelectionMap[key]=typeSelect.value;
+    currentChartMode='txo';
+    renderChart(cutoffTime); rebuildTTable(cutoffTime); updateAccountUI();
+    document.querySelector('.nav-item[data-page="pageChart"]').click();
+  }
+  if(td.classList.contains('strike-cell')){
+    currentChartMode='tx';
+    renderChart(cutoffTime);
+    document.querySelector('.nav-item[data-page="pageChart"]').click();
+  }
+});
+
+// ═══════════════════════════════════
+// CHARTS — Full renderTA, renderTX, renderTrend from original
+// ═══════════════════════════════════
+function renderChart(cutoff=null){
+  if(currentChartMode==='tx'){ renderTX(cutoff); renderTrend(cutoff); }
+  else{ renderTA(cutoff); renderTrend(cutoff); }
+}
+
+// Chart strike navigation buttons
+document.getElementById('chartStrikeUp').addEventListener('click',()=>{
+  moveStrike(-1);
+  currentChartMode='txo';
+  taChartInited=false; taChartKey='';
+  renderChart(cutoffTime);
+});
+document.getElementById('chartStrikeDown').addEventListener('click',()=>{
+  moveStrike(1);
+  currentChartMode='txo';
+  taChartInited=false; taChartKey='';
+  renderChart(cutoffTime);
+});
+
+// ── renderTA (TXO K-line) ──
+function renderTA(cutoff=null){
+  const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
+  const session=sessionSelect.value, period=parseInt(periodSelect.value);
+
+  const newTAKey=`${expiry}|${strike}|${type}|${session}|${period}|${isDark}`;
+  const needFullRedraw=(newTAKey!==taChartKey)||!taChartInited;
+  if(needFullRedraw){chartTA.clear(); taChartKey=newTAKey; taChartInited=false;}
+  if(!expiry||!strike||!type){kinfo.innerText='請選擇檔案與條件'; chartName.textContent='—'; return;}
+  chartName.textContent=`${expiry} ${strike}${type}`;
+
+  const k=keyOf(expiry,strike,type);
+  const indexArr=dataIndex.get(k)||[];
+  const cutMs=cutoff?+cutoff:Infinity;
+  const data=[]; for(const d of indexArr){if(d.dtms>cutMs) break; if(withinSession(d.time)) data.push(d);}
+
+  const grouped={};
+  for(const d of data){
+    const bucket=Math.floor(d.dtms/(60000*period))*(60000*period);
+    const key=String(bucket);
+    if(!grouped[key]) grouped[key]={open:d.price,high:d.price,low:d.price,close:d.price,volume:d.volume};
+    else{const g=grouped[key]; g.high=Math.max(g.high,d.price); g.low=Math.min(g.low,d.price); g.close=d.price; g.volume+=d.volume;}
+  }
+
+  const timeKeys=Object.keys(grouped).sort();
+  const times=timeKeys.map(k=>new Date(+k));
+  const kdata=times.map(t=>{const g=grouped[t.getTime()]; return[g.open,g.close,g.low,g.high];});
+  const volumes=times.map(t=>grouped[t.getTime()].volume);
+
+  const closeArr=kdata.map(k=>k[1]);
+  const maPeriods=getMAPeriods();
+  const maMap={}; maPeriods.forEach(p=>{maMap[p]=calcMA(p,closeArr);});
+  const maColorMap=getMAColorMap();
+
+  // MarkLines — 每次都重算（回測時 cutoff 變化，最高最低也跟著變）
+  const markLineData=[];
+  if(times.length&&kdata.length){
+    const highs=kdata.map(k=>k[3]).sort((a,b)=>b-a);
+    const lows=kdata.map(k=>k[2]).sort((a,b)=>a-b);
+    const xVals=times.map(t=>t.toLocaleString());
+    times.forEach((t,idx)=>{if(t.getMinutes()===0||t.getMinutes()===30) markLineData.push({xAxis:xVals[idx],lineStyle:{color:'#555',type:'dashed',width:0.5},label:{show:false}});});
+    const addYL=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${text}\n${val}`,position:'insideStartTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
+    const addYR=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${val}\n${text}`,position:'insideEndTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
+    addYR(highs[0],'最高','#ff5722',false); addYR(highs[1]??highs[0],'次高','#ffa726',true);
+    addYL(lows[0],'最低','#2196f3',false); addYL(lows[1]??lows[0],'次低','#42a5f5',true);
+  }
+
+  const series=[];
+  const candleOpt={type:'candlestick',data:kdata,itemStyle:{color:'#ff1744',color0:'#00e676',borderColor:'#ff1744',borderColor0:'#00e676',borderWidth:1}};
+  candleOpt.markLine={symbol:'none',silent:true,data:markLineData};
+  series.push(candleOpt);
+
+  maPeriods.forEach(p=>{
+    series.push({type:'line',name:`MA${p}`,data:maMap[p],smooth:true,showSymbol:false,symbol:'none',lineStyle:{width:1.2,opacity:0.7,color:maColorMap?.[p]||undefined}});
+  });
+  series.push({type:'bar',xAxisIndex:1,yAxisIndex:1,data:volumes,name:'成交量',itemStyle:{color:'rgba(96,165,250,0.25)'}});
+
+  const taOption={
+    backgroundColor:'transparent',
+    animation:needFullRedraw, animationDuration:needFullRedraw?400:0,
+    xAxis:[
+      {type:'category',data:times.map(t=>t.toLocaleString()),axisPointer:{type:'shadow'},axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},splitLine:{show:false}},
+      {type:'category',gridIndex:1,data:times.map(t=>t.toLocaleString()),axisLabel:{show:false},axisTick:{show:false},axisLine:{show:false}}
+    ],
+    series
+  };
+  if(needFullRedraw){
+    taOption.tooltip={trigger:'axis',axisPointer:{type:'cross',crossStyle:{color:'rgba(255,255,255,0.2)',width:1},lineStyle:{color:'rgba(255,255,255,0.15)',width:1}},confine:true,backgroundColor:'transparent',borderWidth:0,extraCssText:'box-shadow:none;padding:0;',formatter:()=>''};
+    taOption.dataZoom=[{type:'inside',xAxisIndex:[0,1]}];
+    taOption.yAxis=[{scale:true,axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},{scale:true,gridIndex:1,axisLabel:{show:false},splitLine:{show:false}}];
+    taOption.grid=[{left:46,right:50,top:14,bottom:70},{left:46,right:50,top:'78%',bottom:20}];
+  }
+
+  chartTA.setOption(taOption,needFullRedraw);
+  taChartInited=true;
+
+  // 更新模組層級快照
+  _kinfoKdata=kdata; _kinfoVolumes=volumes; _kinfoCutoff=cutoff;
+  _kinfoMode='txo';
+  if(!_kinfoUserHover) updateKinfoLast();
+}
+
+// ── renderTX (TX Futures K-line) ──
+function renderTX(cutoff=null){
+  const period=parseInt(periodSelect.value)||5;
+  const expiry=(expirySelect.value||'').replace(/\s/g,'');
+  const session=sessionSelect.value;
+
+  const newTXKey=`tx|${expiry}|${session}|${period}|${isDark}`;
+  const needFullRedraw=(newTXKey!==taChartKey)||!taChartInited;
+  if(needFullRedraw){chartTA.clear(); taChartKey=newTXKey; taChartInited=false;}
+
+  const txCutMs=cutoff?+cutoff:Infinity;
+  let data=[]; for(const d of txDataIndex){if(d.dtms>txCutMs) break; data.push(d);}
+
+  // Expiry filtering (same as original)
+  if(expiry&&data.length){
+    const same=data.filter(d=>(d.expiry||'').replace(/\s/g,'')===expiry);
+    if(same.length) data=same;
+    else{
+      const ym=expiry.slice(0,6);
+      const sameYM=data.filter(d=>(d.expiry||'').slice(0,6)===ym);
+      if(sameYM.length) data=sameYM;
+      else{
+        const allExp=[...new Set(data.map(d=>(d.expiry||'').replace(/\s/g,'')))].sort();
+        const next=allExp.find(e=>e>expiry);
+        if(next) data=data.filter(d=>(d.expiry||'').replace(/\s/g,'')===next);
+      }
+    }
+  }
+  data=data.filter(d=>withinSession(d.time));
+
+  if(!data.length){kinfo.innerText=`TX 台指期（${expiry||'?'}）：無資料`; chartName.textContent='TX 台指期'; return;}
+  chartName.textContent=`TX 台指期${expiry?' '+expiry:''}`;
+
+  const grouped={};
+  for(const d of data){
+    const bucket=Math.floor(d.dtms/(60000*period))*(60000*period);
+    const key=String(bucket);
+    if(!grouped[key]) grouped[key]={open:d.price,high:d.price,low:d.price,close:d.price,volume:d.volume||0};
+    else{const g=grouped[key]; g.high=Math.max(g.high,d.price); g.low=Math.min(g.low,d.price); g.close=d.price; g.volume+=(d.volume||0);}
+  }
+
+  const timeKeys=Object.keys(grouped).sort();
+  const times=timeKeys.map(k=>new Date(+k));
+  const kdata=times.map(t=>{const g=grouped[t.getTime()]; return[g.open,g.close,g.low,g.high];});
+  const volumes=times.map(t=>grouped[t.getTime()].volume);
+
+  const closeArr=kdata.map(k=>k[1]);
+  const maPeriods=getMAPeriods();
+  const maMap={}; maPeriods.forEach(p=>{maMap[p]=calcMA(p,closeArr);});
+  const maColorMap=getMAColorMap();
+
+  const highs=kdata.map(k=>k[3]).sort((a,b)=>b-a);
+  const lows=kdata.map(k=>k[2]).sort((a,b)=>a-b);
+  const highPrice=highs[0], lowPrice=lows[0];
+
+  const markLineData=[];
+  if(times.length){
+    const xVals=times.map(t=>t.toLocaleString());
+    times.forEach((t,idx)=>{if(t.getMinutes()===0||t.getMinutes()===30) markLineData.push({xAxis:xVals[idx],lineStyle:{color:'#555',type:'dashed',width:0.5},label:{show:false}});});
+    const addYL=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${text}\n${val}`,position:'insideStartTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
+    const addYR=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${val}\n${text}`,position:'insideEndTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
+    addYR(highPrice,'最高','#ff5722',false); addYR(highs[1]??highPrice,'次高','#ffa726',true);
+    addYL(lowPrice,'最低','#2196f3',false); addYL(lows[1]??lowPrice,'次低','#42a5f5',true);
+  }
+
+  const candleOpt={type:'candlestick',data:kdata,itemStyle:{color:'#ff1744',color0:'#00e676',borderColor:'#ff1744',borderColor0:'#00e676',borderWidth:1}};
+  candleOpt.markLine={symbol:'none',silent:true,data:markLineData};
+  const series=[candleOpt];
+  maPeriods.forEach(p=>{series.push({type:'line',name:`MA${p}`,data:maMap[p],smooth:true,showSymbol:false,symbol:'none',lineStyle:{width:1.2,opacity:0.7,color:maColorMap?.[p]||undefined}});});
+  series.push({type:'bar',xAxisIndex:1,yAxisIndex:1,data:volumes,name:'成交量',itemStyle:{color:'rgba(96,165,250,0.25)'}});
+
+  const txOption={
+    backgroundColor:'transparent',
+    animation:needFullRedraw, animationDuration:needFullRedraw?400:0,
+    xAxis:[
+      {type:'category',data:times.map(t=>t.toLocaleString()),axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},splitLine:{show:false}},
+      {type:'category',gridIndex:1,data:times.map(t=>t.toLocaleString()),axisLabel:{show:false},axisTick:{show:false},axisLine:{show:false}}
+    ],
+    series
+  };
+  if(needFullRedraw){
+    txOption.tooltip={trigger:'axis',axisPointer:{type:'cross',crossStyle:{color:'rgba(255,255,255,0.2)',width:1},lineStyle:{color:'rgba(255,255,255,0.15)',width:1}},confine:true,backgroundColor:'transparent',borderWidth:0,extraCssText:'box-shadow:none;padding:0;',formatter:()=>''};
+    txOption.dataZoom=[{type:'inside',xAxisIndex:[0,1]}];
+    txOption.yAxis=[{scale:true,axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},{scale:true,gridIndex:1,axisLabel:{show:false},splitLine:{show:false}}];
+    txOption.grid=[{left:46,right:50,top:14,bottom:70},{left:46,right:50,top:'78%',bottom:20}];
+  }
+  chartTA.setOption(txOption,needFullRedraw);
+  taChartInited=true;
+
+  // Crosshair move → update kinfo
+  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff;
+  _kinfoMode='tx';
+  if(!_kinfoUserHover) updateKinfoLast();
+}
+
+// ── renderTrend (走勢圖 with red-above/green-below open price) ──
+function renderTrend(cutoff=null){
+  const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
+  const session=sessionSelect.value;
+  const newKey=`${expiry}|${strike}|${type}|${session}`;
+  const needFullRedraw=(newKey!==trendChartKey)||!trendChartInited;
+  if(needFullRedraw){chartTrend.clear(); trendChartKey=newKey; trendChartInited=false;}
+  if(!expiry||!strike||!type) return;
+
+  const trendArr=dataIndex.get(keyOf(expiry,strike,type))||[];
+  const trendCutMs=cutoff?+cutoff:Infinity;
+  const data=[]; for(const d of trendArr){if(d.dtms>trendCutMs) break; if(withinSession(d.time)) data.push(d);}
+  if(!data.length) return;
+
+  // 1-minute aggregation
+  const grouped={};
+  for(const d of data){
+    const bucket=Math.floor(d.dtms/60000)*60000;
+    const key=String(bucket);
+    if(!grouped[key]) grouped[key]={t:bucket,open:d.price,high:d.price,low:d.price,close:d.price,volume:d.volume};
+    else{const g=grouped[key]; g.high=Math.max(g.high,d.price); g.low=Math.min(g.low,d.price); g.close=d.price; g.volume+=d.volume;}
+  }
+  const keys=Object.keys(grouped).sort((a,b)=>+a-+b);
+  const bars=keys.map(k=>grouped[k]);
+  const times=bars.map(b=>b.t), prices=bars.map(b=>b.close), vols=bars.map(b=>b.volume);
+  const openPx=bars[0].open;
+
+  // High/Low
+  let trendHighIdx=0, trendLowIdx=0;
+  for(let i=1;i<prices.length;i++){
+    if(prices[i]>prices[trendHighIdx]) trendHighIdx=i;
+    if(prices[i]<prices[trendLowIdx]) trendLowIdx=i;
+  }
+  const trendHighPx=prices[trendHighIdx], trendLowPx=prices[trendLowIdx];
+
+  // Y-axis symmetric around open
+  let maxDev=0; for(const p of prices) maxDev=Math.max(maxDev,Math.abs(p-openPx));
+  const pad=Math.max(1,maxDev*0.08);
+  const yMin=openPx-maxDev-pad, yMax=openPx+maxDev+pad;
+
+  // Split into up (red) / down (green) segments
+  const upData=[], dnData=[];
+  function ensureBreak(arr){if(arr.length&&arr[arr.length-1]!==null) arr.push(null);}
+  let prevP=prices[0], prevT=times[0], prevSide=(prevP>=openPx)?'up':'dn';
+  if(prevSide==='up') upData.push([prevT,prevP]); else dnData.push([prevT,prevP]);
+  for(let i=1;i<prices.length;i++){
+    const t=times[i], p=prices[i], side=(p>=openPx)?'up':'dn';
+    if(side===prevSide){if(side==='up') upData.push([t,p]); else dnData.push([t,p]);}
+    else{
+      let tCross=prevT; if(p!==prevP){const ratio=(openPx-prevP)/(p-prevP); tCross=Math.round(prevT+ratio*(t-prevT));}
+      if(prevSide==='up'){upData.push([tCross,openPx]);upData.push(null);ensureBreak(dnData);dnData.push([tCross,openPx]);dnData.push([t,p]);}
+      else{dnData.push([tCross,openPx]);dnData.push(null);ensureBreak(upData);upData.push([tCross,openPx]);upData.push([t,p]);}
+    }
+    prevP=p; prevT=t; prevSide=side;
+  }
+
+  function fmtHM(ts){const d=new Date(ts); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+
+  const trendOption={
+    backgroundColor:'transparent',
+    animation:needFullRedraw, animationDuration:needFullRedraw?500:0,
+    grid:{left:46,right:20,top:14,bottom:40},
+    xAxis:{type:'time',axisLabel:{color:'rgba(138,150,176,0.5)',fontSize:9,formatter:v=>fmtHM(v)},axisLine:{lineStyle:{color:'rgba(255,255,255,.08)'}},axisTick:{show:false},splitLine:{show:true,lineStyle:{color:'rgba(255,255,255,.04)'}}},
+    yAxis:{type:'value',scale:false,min:yMin,max:yMax,
+      axisLabel:{formatter:v=>{const s=(Math.round(v*10)/10).toFixed(1);if(Math.abs(v-openPx)<0.01) return `{base|${s}}`; return v>openPx?`{up|${s}}`:`{dn|${s}}`;},
+        rich:{up:{color:'#ff1744',fontWeight:800,fontSize:10},dn:{color:'#00e676',fontWeight:800,fontSize:10},base:{color:'#3b82f6',fontWeight:900,fontSize:10}}},
+      axisLine:{lineStyle:{color:'rgba(255,255,255,.08)'}},splitLine:{show:true,lineStyle:{color:'rgba(255,255,255,.04)'}}},
+    tooltip:{trigger:'axis',axisPointer:{type:'cross',crossStyle:{color:'rgba(255,255,255,0.15)',width:1},lineStyle:{color:'rgba(255,255,255,0.12)',width:1}},confine:true,backgroundColor:'transparent',borderWidth:0,extraCssText:'box-shadow:none;padding:0;',formatter:()=>''},
+    series:[
+      {name:'Above',type:'line',data:upData,symbol:'none',lineStyle:{width:2.5,color:'#ff1744'},areaStyle:{origin:openPx,color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(255,23,68,0.32)'},{offset:1,color:'rgba(255,23,68,0)'}])},z:3},
+      {name:'Below',type:'line',data:dnData,symbol:'none',lineStyle:{width:2.5,color:'#00e676'},areaStyle:{origin:openPx,color:new echarts.graphic.LinearGradient(0,1,0,0,[{offset:0,color:'rgba(0,230,118,0.30)'},{offset:1,color:'rgba(0,230,118,0)'}])},z:2},
+      {name:'Open',type:'line',data:[[times[0],openPx],[times[times.length-1],openPx]],symbol:'none',lineStyle:{width:1.2,color:'#3b82f6'},
+        label:{show:true,position:'end',formatter:()=>(Math.round(openPx*10)/10).toFixed(1),color:'#3b82f6',fontWeight:900,fontSize:11,backgroundColor:'rgba(0,0,0,.55)',borderColor:'rgba(59,130,246,.9)',borderWidth:1,borderRadius:6,padding:[2,6]},z:1},
+      {name:'HL',type:'line',data:[],symbol:'none',lineStyle:{width:0},
+        markPoint:{symbol:'pin',symbolSize:32,animation:false,data:[
+          {name:'最高',coord:[times[trendHighIdx],trendHighPx],value:trendHighPx,itemStyle:{color:'#ff1744'},label:{color:'#fff',fontWeight:900,fontSize:9,formatter:'{c}'}},
+          {name:'最低',coord:[times[trendLowIdx],trendLowPx],value:trendLowPx,symbolRotate:180,itemStyle:{color:'#00e676'},label:{color:'#fff',fontWeight:900,fontSize:9,formatter:'{c}',offset:[0,-4]}}
+        ]},
+        markLine:{silent:true,animation:false,symbol:'none',data:[
+          {yAxis:trendHighPx,lineStyle:{color:'rgba(255,23,68,.45)',type:'dashed',width:1},label:{show:true,position:'start',color:'#ff1744',fontWeight:800,fontSize:10,formatter:`最高 ${trendHighPx}`,backgroundColor:'rgba(0,0,0,.7)',borderRadius:4,padding:[2,6]}},
+          {yAxis:trendLowPx,lineStyle:{color:'rgba(0,230,118,.45)',type:'dashed',width:1},label:{show:true,position:'start',color:'#00e676',fontWeight:800,fontSize:10,formatter:`最低 ${trendLowPx}`,backgroundColor:'rgba(0,0,0,.7)',borderRadius:4,padding:[2,6]}}
+        ]},z:10}
+    ]
+  };
+  chartTrend.setOption(trendOption,needFullRedraw);
+  trendChartInited=true;
+}
+
+// ═══════════════════════════════════
+// TX BAR (expiry-aware, with %)
+// ═══════════════════════════════════
+function updateTXBar(cutoff){
+  const expiry=(expirySelect.value||'').replace(/\s/g,'');
+  const txBarCutMs=cutoff?+cutoff:(cutoffTime?+cutoffTime:Infinity);
+  let pool=[]; for(const d of txDataIndex){if(d.dtms>txBarCutMs) break; if(withinSession(d.time)) pool.push(d);}
+
+  if(expiry&&pool.length){
+    const same=pool.filter(d=>(d.expiry||'').replace(/\s/g,'')===expiry);
+    if(same.length) pool=same;
+    else{const ym=expiry.slice(0,6); const sameYM=pool.filter(d=>(d.expiry||'').slice(0,6)===ym); if(sameYM.length) pool=sameYM; else{const allExp=[...new Set(pool.map(d=>(d.expiry||'').replace(/\s/g,'')))].sort(); const next=allExp.find(e=>e>expiry); if(next) pool=pool.filter(d=>(d.expiry||'').replace(/\s/g,'')===next);}}
+  }
+  if(!pool.length) return;
+
+  const last=pool[pool.length-1];
+  const dayPool=pool.filter(d=>d.date===last.date);
+  const openPx=dayPool[0].price, lastPx=last.price;
+  const highPx=dayPool.reduce((m,d)=>d.price>m?d.price:m,dayPool[0].price);
+  const lowPx=dayPool.reduce((m,d)=>d.price<m?d.price:m,dayPool[0].price);
+  const totalVol=dayPool.reduce((s,d)=>s+(d.volume||0),0);
+  const chg=lastPx-openPx;
+  const pct=openPx?(chg/openPx*100):0;
+  const sign=chg>=0?'+':'';
+
+  const chgCls='tx-chg '+(chg>0?'up':chg<0?'down':'flat');
+  const chgTxt=`${sign}${chg.toFixed(0)} (${sign}${pct.toFixed(2)}%)`;
+
+  ['','2'].forEach(suffix=>{
+    const el=id=>document.getElementById(id+suffix);
+    const pxEl=el('txPrice'); if(pxEl) pxEl.textContent=lastPx;
+    const chgEl=el('txChg'); if(chgEl){chgEl.textContent=chgTxt; chgEl.className=chgCls;}
+    const oEl=el('txOpen'); if(oEl) oEl.textContent=openPx;
+    const hEl=el('txHigh'); if(hEl) hEl.textContent=highPx;
+    const lEl=el('txLow'); if(lEl) lEl.textContent=lowPx;
+    const vEl=el('txVol'); if(vEl) vEl.textContent=fmtNum(totalVol);
+  });
+  const txBarChain=document.getElementById('txBarChain'); if(txBarChain) txBarChain.style.display='';
+}
+
+// ═══════════════════════════════════
+// BACKTEST (faithful port with interval timer)
+// ═══════════════════════════════════
+function rebuildPlayTimes(){
+  const expiry=expirySelect.value;
+  const tickSet=new Set();
+  dataIndex.forEach((arr,k)=>{
+    if(!k.startsWith(expiry+'|')) return;
+    for(const d of arr){if(withinSession(d.time)) tickSet.add(d.dtms);}
+  });
+  // Also include TX timestamps
+  for(const d of txDataIndex){if(withinSession(d.time)) tickSet.add(d.dtms);}
+  playTimes=Array.from(tickSet).sort((a,b)=>a-b).map(x=>new Date(x));
+  playIndex=0; simTime=null;
+  btProgress.min=0; btProgress.max=Math.max(0,playTimes.length-1); btProgress.value=0;
+  updateBtUI();
+}
+
+function updateBtUI(){
+  btClock.textContent=playTimes.length?fmtTime(playTimes[Math.min(playIndex,playTimes.length-1)]):'--:--:--';
+  const infoLbl=document.getElementById('btInfoLabel');
+  if(infoLbl) infoLbl.textContent=playTimes.length?`${playIndex+1} / ${playTimes.length}`:'';
+  btStart.disabled=!playTimes.length||playing;
+  btPause.disabled=!playing;
+  btResume.disabled=playing||!playTimes.length||playIndex>=playTimes.length-1;
+  btStop.disabled=!playTimes.length||(!playing&&cutoffTime===null);
+  btStep.disabled=playing||playIndex>=playTimes.length-1||!playTimes.length;
+  btStepBack.disabled=playing||playIndex<=0||!playTimes.length;
+  btProgress.disabled=playing||!playTimes.length;
+  if(Number(riskEquityStop.value)>-999999){
+    const eq=calcEquity();
+    if(eq<=Number(riskEquityStop.value)){btnBuy.disabled=true;btnSell.disabled=true;}
+  }
+  ltWorkingCnt.textContent=limits.filter(l=>l.status==='Working').length;
+}
+
+function setCutoffByIndex(i){
+  playIndex=Math.max(0,Math.min(i,playTimes.length-1));
+  cutoffTime=playTimes[playIndex]||null;
+  simTime=cutoffTime?new Date(cutoffTime):null;
+  btProgress.value=playIndex;
+  updateBtUI();
+  renderChart(cutoffTime);
+  rebuildTTable(cutoffTime);
+  checkLimitOrders(cutoffTime);
+  tickAutoOrders(cutoffTime);
+  updateAccountUI();
+  updateTXBar(cutoffTime);
+}
+
+function startPlayback(){
+  if(!playTimes.length) return;
+  playing=true; updateBtUI();
+  topStatus.textContent='回測中'; topStatus.className='topbar-status running';
+  if(cutoffTime===null) setCutoffByIndex(0);
+  const stepSec=Math.max(1,+btStepSec.value||1);
+  const cps=Math.max(1,+btCalcSpeed.value||1);
+  const intervalMs=Math.round(1000/cps);
+  if(playTimer) clearInterval(playTimer);
+  playTimer=setInterval(()=>{
+    if(playIndex>=playTimes.length-1){stopPlayback(); return;}
+    const nextTarget=new Date(simTime.getTime()+stepSec*1000);
+    let idx=playTimes.findIndex(dt=>dt>=nextTarget);
+    if(idx===-1) idx=playTimes.length-1;
+    if(idx===playIndex) idx=Math.min(playIndex+1,playTimes.length-1);
+    setCutoffByIndex(idx);
+  },intervalMs);
+}
+
+function pausePlayback(){if(playTimer) clearInterval(playTimer); playTimer=null; playing=false; updateBtUI();}
+function resumePlayback(){if(!playing) startPlayback();}
+function stopPlayback(){
+  if(playTimer) clearInterval(playTimer); playTimer=null; playing=false;
+  cutoffTime=null; simTime=null;
+  trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
+  prevTTablePrices.clear();
+  if(autoOrderActive){
+    autoOrderActive=false;
+    forceCloseAllAutoOrders('回測停止');
+    s1Status.textContent='已停止'; s1Status.className='status-badge closed';
+    bt20Run.style.display=''; bt20Stop.style.display='none';
+    renderAutoOrderTable(); renderAutoOrderStats();
+  }
+  renderChart(); rebuildTTable(); updateBtUI(); updateAccountUI(); updateTXBar();
+  topStatus.textContent=rawData.length?'已載入':'未載入';
+  topStatus.className=rawData.length?'topbar-status loaded':'topbar-status idle';
+}
+
+btStart.onclick=startPlayback;
+btPause.onclick=pausePlayback;
+btResume.onclick=resumePlayback;
+btStop.onclick=stopPlayback;
+btStep.onclick=()=>setCutoffByIndex(playIndex+1);
+btStepBack.onclick=()=>setCutoffByIndex(playIndex-1);
+btProgress.oninput=(e)=>setCutoffByIndex(+e.target.value);
+btJump.addEventListener('click',()=>{
+  if(!playTimes.length) return;
+  const idx=findIndexByTimeStr(btSetTime.value);
+  if(idx>=0){pausePlayback(); setCutoffByIndex(idx);}
+});
+
+// ═══════════════════════════════════
+// TRADING ENGINE (faithful port)
+// ═══════════════════════════════════
+function resetAccount(){account.cash=account.initCash; account.realized=0; account.positions.clear(); account.orders=[]; limits.length=0; ltSeq=1;}
+
+function calcEquity(preUPnL){
+  let u=(typeof preUPnL==='number')?preUPnL:0;
+  if(preUPnL==null){account.positions.forEach(p=>{u+=(p.upnl||0);});}
+  return account.cash+u;
+}
+
+function placeOrder(side){
+  const qty=Math.max(1,Math.floor(Number(qtyInput.value)||1));
+  const mult=Math.max(1,Number(multInput.value)||50);
+  const fee=Math.max(0,Number(feeInput.value)||0);
+  const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
+  const key=keyOf(expiry,strike,type);
+  const px=getLastPrice(expiry,strike,type,cutoffTime);
+  if(px==null){alert('尚無可成交價格'); return;}
+  if(qty>Number(riskMaxQty.value)){alert('超過單筆最大口數'); return;}
+  if(Number(riskEquityStop.value)>-999999&&calcEquity()<=Number(riskEquityStop.value)){alert('已觸發停損，禁止下單'); return;}
+
+  const pos=account.positions.get(key)||{qty:0,avg:0,last:px,upnl:0};
+  if(side==='SELL'&&pos.qty-qty<0&&!allowShort.checked){
+    if(pos.qty>0){const canSell=pos.qty; execute(key,'SELL',canSell,px,mult,fee); alert('已全數平倉；未勾選允許放空');}
+    else{alert('目前無多單可平，且未勾選允許放空');}
+    updateAccountUI(); return;
+  }
+  execute(key,side,qty,px,mult,fee); updateAccountUI();
+}
+
+function execute(key,side,qty,px,mult,feePerLot){
+  let pos=account.positions.get(key)||{qty:0,avg:0,last:px,upnl:0};
+  let realizedNow=0;
+  const fee=feePerLot*qty;
+
+  if(side==='BUY'){
+    account.cash-=(px*mult*qty+fee);
+    if(pos.qty<0){const cover=Math.min(qty,-pos.qty); realizedNow+=(pos.avg-px)*mult*cover; pos.qty+=cover; qty-=cover;}
+    if(qty>0){const newQty=pos.qty+qty; pos.avg=(pos.avg*pos.qty+px*qty)/(newQty===0?1:newQty); pos.qty=newQty;}
+  }else{
+    if(pos.qty>0){const close=Math.min(qty,pos.qty); realizedNow+=(px-pos.avg)*mult*close; account.cash+=px*mult*close; qty-=close; pos.qty-=close; if(pos.qty===0) pos.avg=0;}
+    if(qty>0){account.cash+=px*mult*qty; const newQty=pos.qty-qty; pos.avg=(Math.abs(pos.qty)*pos.avg+px*qty)/(Math.abs(newQty)===0?1:Math.abs(newQty)); pos.qty=newQty;}
+    account.cash-=fee;
+  }
+  account.realized+=realizedNow;
+  pos.last=px;
+  account.positions.set(key,pos);
+  account.orders.push({time:cutoffTime?new Date(cutoffTime):(playTimes[playIndex]||new Date()),key,side,qty,price:px,fee,realized:realizedNow});
+}
+
+btnBuy.addEventListener('click',()=>placeOrder('BUY'));
+btnSell.addEventListener('click',()=>placeOrder('SELL'));
+
+// Limit orders
+btnPlaceLimit.addEventListener('click',()=>{
+  const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
+  if(!expiry||!strike||!type){alert('請先選商品'); return;}
+  const key=keyOf(expiry,strike,type);
+  const side=ltSide.value;
+  const price=Number(ltPrice.value);
+  const qty=Math.max(1,Math.floor(Number(ltQty.value)||1));
+  if(!isFinite(price)||price<=0){alert('請輸入有效的權利點'); return;}
+  if(qty>Number(riskMaxQty.value)){alert('超過單筆最大口數'); return;}
+  const now=cutoffTime?new Date(cutoffTime):new Date();
+  limits.push({id:ltSeq++,key,side,price,qty,status:'Working',created:now,filledTime:null,fillPrice:null});
+  renderLimitTable(); updateBtUI();
+});
+
+function renderLimitTable(){
+  const ltBody=document.getElementById('ltBody'); if(!ltBody) return;
+  ltBody.innerHTML=limits.slice(-200).reverse().map(l=>{
+    return `<tr>
+      <td style="font-size:9px">${(l.filledTime||l.created).toLocaleString()}</td>
+      <td style="font-size:9px">${l.key}</td><td>${l.side}</td><td>${fmtNum(l.price,1)}</td><td>${l.qty}</td>
+      <td>${l.status}${l.fillPrice!=null?' @'+fmtNum(l.fillPrice,1):''}</td>
+      <td>${l.status==='Working'?`<button class="bt-btn" style="padding:3px 6px;font-size:10px" onclick="cancelLimitById(${l.id})">取消</button>`:''}</td>
+    </tr>`;
+  }).join('');
+  ltWorkingCnt.textContent=limits.filter(l=>l.status==='Working').length;
+}
+window.cancelLimitById=(id)=>{const o=limits.find(x=>x.id===id); if(o&&o.status==='Working'){o.status='Canceled'; renderLimitTable(); updateBtUI();}};
+
+function checkLimitOrders(cutoff){
+  if(!cutoff) return;
+  const mult=Math.max(1,Number(multInput.value)||50);
+  const fee=Math.max(0,Number(feeInput.value)||0);
+  limits.forEach(l=>{
+    if(l.status!=='Working') return;
+    const[e,s,t]=l.key.split('|');
+    const px=getLastPrice(e,s,t,cutoff);
+    if(px==null) return;
+    const buyHit=(l.side==='BUY'&&px<=l.price);
+    const sellHit=(l.side==='SELL'&&px>=l.price);
+    if(buyHit||sellHit){
+      if(l.side==='SELL'){const pos=account.positions.get(l.key)||{qty:0}; if(pos.qty-l.qty<0&&!allowShort.checked) return;}
+      if(Number(riskEquityStop.value)>-999999&&calcEquity()<=Number(riskEquityStop.value)) return;
+      execute(l.key,l.side,l.qty,px,mult,fee);
+      l.status='Filled'; l.filledTime=new Date(cutoff); l.fillPrice=px;
+    }
+  });
+  renderLimitTable();
+}
+
+// Account UI
+function updateAccountUI(){
+  const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
+  const key=keyOf(expiry,strike,type);
+  symNow.textContent=key||'—';
+  const px=getLastPrice(expiry,strike,type,cutoffTime);
+  lastPx.textContent=px==null?'—':px;
+
+  const mult=Math.max(1,Number(multInput.value)||50);
+  let totalUPnL=0;
+  account.positions.forEach((p,k)=>{
+    const[e,s,t]=k.split('|');
+    const last=getLastPrice(e,s,t,cutoffTime);
+    if(last!=null){p.last=last; const sign=Math.sign(p.qty); const diff=(sign>=0)?(last-p.avg):(p.avg-last); p.upnl=diff*mult*Math.abs(p.qty);}
+    else{p.upnl=0;}
+    totalUPnL+=p.upnl;
+  });
+
+  const eq=calcEquity(totalUPnL);
+  document.getElementById('cash').textContent=fmtNum(account.cash);
+  document.getElementById('rPnL2').textContent=fmtNum(account.realized);
+  document.getElementById('uPnL2').textContent=fmtNum(totalUPnL);
+  document.getElementById('equity2').textContent=fmtNum(eq);
+
+  // Positions
+  const posBody=document.getElementById('posBody');
+  const posHtml=[];
+  account.positions.forEach((p,k)=>{
+    if(p.qty===0) return;
+    const cls=p.upnl>=0?'red':'green';
+    posHtml.push(`<tr><td style="font-size:9px">${k}</td><td>${p.qty}</td><td>${fmtNum(p.avg)}</td><td>${p.last==null?'—':fmtNum(p.last)}</td><td class="${cls}">${fmtNum(p.upnl)}</td></tr>`);
+  });
+  posBody.innerHTML=posHtml.length?posHtml.join(''):'<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:16px">尚無部位</td></tr>';
+
+  // Orders
+  const ordBody=document.getElementById('ordBody');
+  ordBody.innerHTML=account.orders.slice(-100).reverse().map(o=>{
+    const cls=(o.realized||0)>=0?'red':'green';
+    return `<tr><td style="font-size:9px">${o.time.toLocaleString()}</td><td style="font-size:9px">${o.key}</td><td>${o.side}</td><td>${o.qty}</td><td>${fmtNum(o.price)}</td><td class="${cls}">${fmtNum(o.realized)}</td></tr>`;
+  }).join('');
+
+  // Limit orders
+  renderLimitTable();
+
+  if(Number(riskEquityStop.value)>-999999&&eq<=Number(riskEquityStop.value)){btnBuy.disabled=true;btnSell.disabled=true;}
+  else{btnBuy.disabled=false;btnSell.disabled=false;}
+}
+
+// ═══════════════════════════════════
+// AUTO ORDER ENGINE (faithful port of tickAutoOrders)
+// ═══════════════════════════════════
+bt20Run.addEventListener('click',()=>{
+  if(autoOrderActive) return;
+  if(!rawData.length){alert('尚未載入資料'); return;}
+  if(!expirySelect.value){alert('請先選擇到期月份'); return;}
+  const entryMin=parseFloat(document.getElementById('s1EntryMin').value||'20');
+  const entryMax=parseFloat(document.getElementById('s1EntryMax').value||'25');
+  if(entryMin>entryMax){alert('進場區間：下限不能大於上限'); return;}
+
+  autoOrderActive=true; autoOrderPositions=[]; autoOrderEnteredKeys=new Set();
+  s1Status.textContent='監控中...'; s1Status.className='status-badge open';
+  bt20Run.style.display='none'; bt20Stop.style.display='';
+  s1Cards.style.display=''; s1TblWrap.style.display='';
+  renderAutoOrderTable(); renderAutoOrderStats();
+});
+
+bt20Stop.addEventListener('click',()=>{
+  autoOrderActive=false;
+  s1Status.textContent='已停止'; s1Status.className='status-badge closed';
+  bt20Run.style.display=''; bt20Stop.style.display='none';
+  forceCloseAllAutoOrders('手動停止');
+  renderAutoOrderTable(); renderAutoOrderStats();
+});
+
+function tickAutoOrders(cutoff){
+  if(!autoOrderActive||!cutoff) return;
+  const expiry=expirySelect.value;
+  const callType=typeAliases.call, putType=typeAliases.put;
+  const scanSide=document.getElementById('s1ScanSide').value;
+  const entryMin=parseFloat(document.getElementById('s1EntryMin').value||'20');
+  const entryMax=parseFloat(document.getElementById('s1EntryMax').value||'25');
+  const qty=Math.max(1,parseInt(document.getElementById('s1Qty').value||'1'));
+  const mult=Math.max(1,parseInt(document.getElementById('s1Mult').value||'50'));
+  const tp=parseFloat(document.getElementById('s1TP').value||'10');
+  const sl=parseFloat(document.getElementById('s1SL').value||'5');
+  const exitMode=document.getElementById('s1ExitMode').value;
+  const maxPos=Math.max(1,parseInt(document.getElementById('s1MaxPos').value||'10'));
+  const oncePerStrike=document.getElementById('s1OncePerStrike').checked;
+  const timeStart=(document.getElementById('s1TimeStart').value||'08:45:00').replace(/:/g,'');
+  const timeEnd=(document.getElementById('s1TimeEnd').value||'13:44:00').replace(/:/g,'');
+  const cutoffMs=+cutoff;
+
+  // 1. Update existing positions
+  autoOrderPositions.forEach(pos=>{
+    if(pos.status!=='open') return;
+    const[e,s,t]=pos.key.split('|');
+    const currentPx=getLastPrice(e,s,t,cutoff);
+    if(currentPx==null) return;
+    pos.currentPrice=currentPx;
+    pos.peakPrice=Math.max(pos.peakPrice||pos.entryPrice,currentPx);
+    if(exitMode==='tpsl'){
+      if(currentPx>=pos.entryPrice+tp){pos.status='closed';pos.exitPrice=currentPx;pos.exitTime=new Date(cutoff);pos.exitReason='停利';pos.pnl=Math.round((currentPx-pos.entryPrice)*qty*mult);return;}
+      if(currentPx<=pos.entryPrice-sl){pos.status='closed';pos.exitPrice=currentPx;pos.exitTime=new Date(cutoff);pos.exitReason='停損';pos.pnl=Math.round((currentPx-pos.entryPrice)*qty*mult);return;}
+    }
+    pos.pnl=Math.round((currentPx-pos.entryPrice)*qty*mult);
+  });
+
+  // 2. Scan for new entries
+  let openCount=autoOrderPositions.filter(p=>p.status==='open').length;
+  if(openCount>=maxPos){renderAutoOrderTable();renderAutoOrderStats();return;}
+
+  const cutDT=new Date(cutoff);
+  const curHMS=hhmmss(cutDT);
+  if(curHMS<timeStart||curHMS>timeEnd){renderAutoOrderTable();renderAutoOrderStats();return;}
+
+  const latestMap=new Map();
+  dataIndex.forEach((arr,k)=>{
+    const parts=k.split('|'); if(parts[0]!==expiry) return;
+    for(let i=arr.length-1;i>=0;i--){
+      const r=arr[i]; if(r.dtms>cutoffMs) continue; if(!withinSession(r.time)) continue;
+      latestMap.set(`${r.strike}|${r.type}`,r); break;
+    }
+  });
+
+  latestMap.forEach((r,k)=>{
+    if(openCount>=maxPos) return;
+    const isCall=(r.type===callType), isPut=(r.type===putType);
+    if(!isCall&&!isPut) return;
+    if(scanSide==='call'&&!isCall) return;
+    if(scanSide==='put'&&!isPut) return;
+    const fullKey=keyOf(r.expiry,r.strike,r.type);
+    if(oncePerStrike&&autoOrderEnteredKeys.has(fullKey)) return;
+    if(r.price>=entryMin&&r.price<=entryMax){
+      autoOrderEnteredKeys.add(fullKey); openCount++;
+      autoOrderPositions.push({
+        key:fullKey,isCall,sideLabel:isCall?'CALL':'PUT',strike:r.strike,status:'open',
+        entryTime:new Date(cutoff),entryPrice:r.price,currentPrice:r.price,exitPrice:null,exitTime:null,exitReason:null,
+        pnl:0,peakPrice:r.price,qty,mult,tpPrice:r.price+tp,slPrice:Math.max(0,r.price-sl)
+      });
+    }
+  });
+  renderAutoOrderTable(); renderAutoOrderStats();
+}
+
+function forceCloseAllAutoOrders(reason){
+  autoOrderPositions.forEach(pos=>{
+    if(pos.status!=='open') return;
+    pos.status='closed';
+    pos.exitPrice=pos.currentPrice||pos.entryPrice;
+    pos.exitTime=cutoffTime?new Date(cutoffTime):new Date();
+    pos.exitReason=reason||'手動停止';
+    const qty=pos.qty||1, mult=pos.mult||50;
+    pos.pnl=Math.round(((pos.exitPrice||0)-pos.entryPrice)*qty*mult);
+  });
+}
+
+function renderAutoOrderTable(){
+  const pnlColor=(v)=>v>0?'color:var(--red2);font-weight:800':v<0?'color:var(--green2);font-weight:800':'';
+  if(!autoOrderPositions.length){
+    s1Body.innerHTML=`<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:14px">${autoOrderActive?'監控中，等待進場條件...':'尚無委託紀錄'}</td></tr>`;
+    return;
+  }
+  const sorted=[...autoOrderPositions].reverse();
+  s1Body.innerHTML=sorted.map(r=>{
+    const stCls=r.status==='open'?'open':'closed';
+    const stText=r.status==='open'?'持倉':'平倉';
+    const tpslText=`${r.tpPrice?.toFixed?.(1)??'—'}/${r.slPrice?.toFixed?.(1)??'—'}`;
+    const exitText=r.status==='open'?(r.currentPrice??'—'):`${r.exitPrice??'—'}`;
+    const reasonStyle=r.exitReason==='停利'?'color:var(--red2);font-weight:700':r.exitReason==='停損'?'color:var(--green2);font-weight:700':'';
+    return `<tr>
+      <td><span class="status-badge ${stCls}">${stText}</span></td>
+      <td class="${r.isCall?'red':'green'}">${r.sideLabel}</td>
+      <td>${r.strike}</td>
+      <td style="font-size:9px">${r.entryPrice}@${r.entryTime?r.entryTime.toLocaleTimeString():''}</td>
+      <td style="font-size:9px">${tpslText}</td>
+      <td>${exitText}</td>
+      <td style="${pnlColor(r.pnl)}">${r.pnl!=null?fmtNum(r.pnl):'—'}</td>
+      <td style="${reasonStyle}">${r.exitReason||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAutoOrderStats(){
+  const allPos=autoOrderPositions;
+  const openPos=allPos.filter(r=>r.status==='open'), filled=allPos.filter(r=>r.status==='closed');
+  const callAll=allPos.filter(r=>r.isCall), putAll=allPos.filter(r=>!r.isCall);
+  const callPnl=callAll.reduce((s,r)=>s+(r.pnl||0),0);
+  const putPnl=putAll.reduce((s,r)=>s+(r.pnl||0),0);
+  const totalPnl=callPnl+putPnl;
+  const pnlColor=(v)=>v>0?'color:var(--red2);font-weight:800':v<0?'color:var(--green2);font-weight:800':'';
+
+  s1CallCount.textContent=callAll.length; s1PutCount.textContent=putAll.length;
+  s1CallPnl.textContent=fmtNum(callPnl); s1CallPnl.style.cssText=pnlColor(callPnl);
+  s1PutPnl.textContent=fmtNum(putPnl); s1PutPnl.style.cssText=pnlColor(putPnl);
+  s1TotalPnl.textContent=fmtNum(totalPnl); s1TotalPnl.style.cssText=pnlColor(totalPnl);
+  s1FilledCount.textContent=`持倉${openPos.length}/平倉${filled.length}/共${allPos.length}`;
+
+  // Winner
+  const closedOrOpen=allPos.filter(r=>r.pnl!=null);
+  if(closedOrOpen.length){
+    const sorted=[...closedOrOpen].sort((a,b)=>(b.pnl||0)-(a.pnl||0));
+    const w=sorted[0]; const wCls=w.isCall?'call':'put';
+    document.getElementById('statWinnerRow').innerHTML=`
+      <span class="winner-badge ${wCls}">${w.sideLabel}</span>
+      <span style="margin-left:8px">履約價 <b>${w.strike}</b></span>
+      <span>進場 <b>${w.entryPrice}</b></span>
+      <span>現價 <b>${w.currentPrice||w.exitPrice||'—'}</b></span>
+      <span style="${pnlColor(w.pnl)}">損益 <b>${fmtNum(w.pnl)}</b></span>`;
+    const medals=['🥇','🥈','🥉'];
+    document.getElementById('statRankTbl').innerHTML=sorted.slice(0,5).map((r,i)=>{
+      const medal=medals[i]||`${i+1}.`;
+      return `<tr><td><span style="font-size:14px;margin-right:6px">${medal}</span><span class="${r.isCall?'red':'green'}">${r.sideLabel}</span> ${r.strike}</td><td style="text-align:right;${pnlColor(r.pnl)}">${fmtNum(r.pnl)}</td></tr>`;
+    }).join('');
+    document.getElementById('statWinner').style.display='';
+  }else{document.getElementById('statWinner').style.display='none';}
+
+  // Pattern
+  if(allPos.length){
+    const callAvg=callAll.length?callPnl/callAll.length:null;
+    const putAvg=putAll.length?putPnl/putAll.length:null;
+    let pattern='混合盤', detail='CALL 與 PUT 損益接近，盤勢不明顯。';
+    if(callAvg!=null&&putAvg!=null){
+      if(callPnl>0&&putPnl>0){pattern='雙邊獲利';detail='CALL 與 PUT 均有獲利，市場波動大、進場時機佳。';}
+      else if(callPnl<0&&putPnl<0){pattern='雙邊虧損';detail='CALL 與 PUT 均虧損，走勢平穩或逆向反彈。';}
+      else if(callPnl>putPnl){pattern='CALL 占優';detail=`CALL 平均損益 ${fmtNum(callAvg)}，優於 PUT 的 ${fmtNum(putAvg)}，偏多走勢。`;}
+      else{pattern='PUT 占優';detail=`PUT 平均損益 ${fmtNum(putAvg)}，優於 CALL 的 ${fmtNum(callAvg)}，偏空走勢。`;}
+    }else if(callAvg!=null){pattern=callPnl>=0?'CALL 獲利':'CALL 虧損';detail=`僅掃描到 CALL，平均損益 ${fmtNum(callAvg)}。`;}
+    else if(putAvg!=null){pattern=putPnl>=0?'PUT 獲利':'PUT 虧損';detail=`僅掃描到 PUT，平均損益 ${fmtNum(putAvg)}。`;}
+    document.getElementById('statPatternBadge').innerHTML=`<span class="pattern-badge">${pattern}</span>`;
+    document.getElementById('statPatternDetail').textContent=detail;
+    document.getElementById('statPattern').style.display='';
+  }else{document.getElementById('statPattern').style.display='none';}
+
+  // Stop loss hits
+  const sub20Body=document.getElementById('statSub20Body');
+  const subRows=allPos.filter(r=>r.exitReason==='停損');
+  if(subRows.length){
+    sub20Body.innerHTML=subRows.map(r=>`<tr>
+      <td class="${r.isCall?'red':'green'}">${r.sideLabel}</td>
+      <td>${r.strike}</td><td style="color:var(--red2)">${r.exitPrice}</td>
+      <td style="font-size:10px">${r.exitTime?r.exitTime.toLocaleTimeString():'—'}</td>
+    </tr>`).join('');
+    document.getElementById('statSub20').style.display='';
+  }else{document.getElementById('statSub20').style.display='none';}
+}
+
+// ═══════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════
+window.addEventListener('resize',()=>{
+  try{chartTA.resize();}catch(_){}
+  try{chartTrend.resize();}catch(_){}
+});
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js')
+      .then(r=>console.log('SW registered:', r.scope))
+      .catch(e=>console.warn('SW failed:', e));
+  });
+}
+</script>
+</body>
+</html>
