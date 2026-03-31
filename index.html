@@ -811,6 +811,7 @@ td.price-01 {
         <div class="chart-area" style="flex:1">
           <div class="chart-tabs">
             <div id="chartName" class="chart-name">—</div>
+            <span id="chartBtClock" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2);margin-left:10px;margin-right:auto;display:none"></span>
             <div class="chart-tabs-right">
               <button class="chart-tab active" id="tabTA" data-tab="ta">技術分析</button>
               <button class="chart-tab" id="tabTrend" data-tab="trend">走勢圖</button>
@@ -1743,6 +1744,21 @@ function highlightTSelected(){
 }
 
 // T-Table click delegation
+// 共用：從 T字表切換到下單頁，並設好商品
+function goOrderFromTTable(td){
+  const strike=td.dataset.strike||strikeSelect.value;
+  const side=td.dataset.side;
+  if(strike){ strikeSelect.value=strike; }
+  if(side){
+    selectedSide=side;
+    const wantType=side==='C'?typeAliases.call:typeAliases.put;
+    if(wantType) typeSelect.value=wantType;
+    const key=`${expirySelect.value}_${strike}`; lastTypeSelectionMap[key]=typeSelect.value;
+  }
+  updateAccountUI();
+  document.querySelector('.nav-item[data-page="pageOrder"]').click();
+}
+
 tBody.addEventListener('click',(e)=>{
   const td=e.target.closest('td'); if(!td) return;
   if(td.classList.contains('td-c')||td.classList.contains('td-p')){
@@ -1752,15 +1768,43 @@ tBody.addEventListener('click',(e)=>{
     if(wantType) typeSelect.value=wantType;
     const key=`${expirySelect.value}_${strike}`; lastTypeSelectionMap[key]=typeSelect.value;
     currentChartMode='txo';
+    setChartTab('ta');
     renderChart(cutoffTime); rebuildTTable(cutoffTime); updateAccountUI();
     document.querySelector('.nav-item[data-page="pageChart"]').click();
   }
   if(td.classList.contains('strike-cell')){
     currentChartMode='tx';
+    setChartTab('ta');
     renderChart(cutoffTime);
     document.querySelector('.nav-item[data-page="pageChart"]').click();
   }
 });
+
+// ── 右鍵（PC）→ 跳下單頁 ──
+tBody.addEventListener('contextmenu',(e)=>{
+  const td=e.target.closest('td'); if(!td) return;
+  if(td.classList.contains('td-c')||td.classList.contains('td-p')||td.classList.contains('strike-cell')){
+    e.preventDefault();
+    goOrderFromTTable(td);
+  }
+});
+
+// ── 長按（手機）→ 跳下單頁 ──
+{
+  let _ltTimer=null, _ltTarget=null;
+  tBody.addEventListener('touchstart',(e)=>{
+    const td=e.target.closest('td'); if(!td) return;
+    if(td.classList.contains('td-c')||td.classList.contains('td-p')||td.classList.contains('strike-cell')){
+      _ltTarget=td;
+      _ltTimer=setTimeout(()=>{
+        if(_ltTarget){ goOrderFromTTable(_ltTarget); _ltTarget=null; }
+      },550);
+    }
+  },{passive:true});
+  tBody.addEventListener('touchend',()=>{ clearTimeout(_ltTimer); _ltTimer=null; _ltTarget=null; });
+  tBody.addEventListener('touchmove',()=>{ clearTimeout(_ltTimer); _ltTimer=null; _ltTarget=null; });
+  tBody.addEventListener('touchcancel',()=>{ clearTimeout(_ltTimer); _ltTimer=null; _ltTarget=null; });
+}
 
 // ═══════════════════════════════════
 // CHARTS — Full renderTA, renderTX, renderTrend from original
@@ -1879,22 +1923,17 @@ function renderTX(cutoff=null){
   const txCutMs=cutoff?+cutoff:Infinity;
   let data=[]; for(const d of txDataIndex){if(d.dtms>txCutMs) break; data.push(d);}
 
-  // Expiry filtering (same as original)
-  if(expiry&&data.length){
-    const same=data.filter(d=>(d.expiry||'').replace(/\s/g,'')===expiry);
-    if(same.length) data=same;
-    else{
-      const ym=expiry.slice(0,6);
-      const sameYM=data.filter(d=>(d.expiry||'').slice(0,6)===ym);
-      if(sameYM.length) data=sameYM;
-      else{
-        const allExp=[...new Set(data.map(d=>(d.expiry||'').replace(/\s/g,'')))].sort();
-        const next=allExp.find(e=>e>expiry);
-        if(next) data=data.filter(d=>(d.expiry||'').replace(/\s/g,'')===next);
-      }
-    }
-  }
+  // TX: 不做 expiry 過濾，直接取所有在交易時段內的資料
+  // 同一時間點若有多筆（不同合約），取成交量最大的那筆（近月主力）
   data=data.filter(d=>withinSession(d.time));
+  if(data.length){
+    const byTime={};
+    for(const d of data){
+      const key=d.dtms;
+      if(!byTime[key]||d.volume>byTime[key].volume) byTime[key]=d;
+    }
+    data=Object.values(byTime).sort((a,b)=>a.dtms-b.dtms);
+  }
 
   if(!data.length){kinfo.innerText=`TX 台指期（${expiry||'?'}）：無資料`; chartName.textContent='TX 台指期'; return;}
   chartName.textContent=`TX 台指期${expiry?' '+expiry:''}`;
@@ -2129,6 +2168,9 @@ function setCutoffByIndex(i){
   playIndex=Math.max(0,Math.min(i,playTimes.length-1));
   cutoffTime=playTimes[playIndex]||null;
   simTime=cutoffTime?new Date(cutoffTime):null;
+  // 同步圖表頁時間顯示
+  const chartClk=document.getElementById('chartBtClock');
+  if(chartClk){ if(cutoffTime){chartClk.textContent=fmtTime(cutoffTime);chartClk.style.display='';} else{chartClk.style.display='none';} }
   btProgress.value=playIndex;
   updateBtUI();
   renderChart(cutoffTime);
@@ -2165,6 +2207,7 @@ function stopPlayback(){
   cutoffTime=null; simTime=null;
   trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
   prevTTablePrices.clear();
+  const _chartClk=document.getElementById('chartBtClock'); if(_chartClk) _chartClk.style.display='none';
   if(autoOrderActive){
     autoOrderActive=false;
     forceCloseAllAutoOrders('回測停止');
