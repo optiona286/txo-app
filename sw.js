@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v2';
+const CACHE_NAME = 'txo-v3';
 const APP_SHELL = [
   './',
   './index.html',
