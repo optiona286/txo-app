@@ -1349,7 +1349,18 @@ function buildDataIndex(){
     arr.push(d);
   }
   dataIndex.forEach(arr=>arr.sort((a,b)=>a.dtms-b.dtms));
-  txDataIndex=txRawData.slice().sort((a,b)=>a.dtms-b.dtms);
+  // TX：選成交量最大的 expiry 作為標的
+  {
+    const txVolByExpiry=new Map();
+    for(const d of txRawData){
+      const exp=(d.expiry||'').replace(/\s/g,'');
+      txVolByExpiry.set(exp,(txVolByExpiry.get(exp)||0)+(d.volume||0));
+    }
+    let bestExp=null, bestVol=-1;
+    txVolByExpiry.forEach((vol,exp)=>{ if(vol>bestVol){bestVol=vol;bestExp=exp;} });
+    const filtered=bestExp!=null?txRawData.filter(d=>(d.expiry||'').replace(/\s/g,'')===bestExp):txRawData;
+    txDataIndex=filtered.slice().sort((a,b)=>a.dtms-b.dtms);
+  }
 }
 
 function sanitizeTimeStr(s){ return(s||'').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6); }
@@ -1468,7 +1479,7 @@ dateSelect.addEventListener('change',async()=>{
 
   // Parse TX futures
   txRawData=rows.map(l=>l.trim().split(',').map(s=>s.trim()))
-    .filter(d=>{if(d.length<5) return false; const p=(d[1]||'').toUpperCase(); return(p==='TX'||p==='MTX'||p==='TXF')&&p!=='TXO';})
+    .filter(d=>{if(d.length<5) return false; const p=(d[1]||'').toUpperCase(); return p==='TX';})
     .map(d=>{
       let time,price,volume,expiry; const isFut=/^\d{6}$/.test(d[2]||'');
       if(isFut){expiry=d[2];time=d[3]||'';price=parseFloat(d[4]);volume=parseInt(d[5])||0;}
