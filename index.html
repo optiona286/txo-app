@@ -13,6 +13,7 @@
 <title>TXO 條件委託單 — 手機版</title>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -338,46 +339,104 @@ html, body {
 .red { color: var(--red2); }
 .green { color: var(--green2); }
 
-/* ── Chart (80/20 layout) ── */
+/* ── Chart page — 手機全屏佈局 ── */
 .chart-page-layout {
-  display: flex; flex-direction: column;
+  display: flex;
+  flex-direction: column;
+  /* 撐滿：全螢幕高度 - topbar - bottomnav - safe area */
   height: calc(100dvh - 56px - 60px - var(--safe-bottom));
   overflow: hidden;
+  background: var(--bg);
 }
 .chart-area {
-  flex: 4; /* 80% */
-  display: flex; flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
   overflow: hidden;
 }
-.chart-container { flex: 1; position: relative; min-height: 0; }
 
-/* ── K線資訊 懸浮框 ── */
+/* 圖表頂部工具列 — 緊湊手機版 */
+.chart-tabs {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 40px;           /* 固定高度，不佔多餘空間 */
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.chart-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-right: auto;
+  max-width: 38vw;         /* 手機螢幕限寬，避免擠壓按鈕 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chart-tabs-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.chart-tab {
+  padding: 5px 10px;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--surface2);
+  color: var(--text3);
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+.chart-tab.active { background: var(--accent); color: #fff; }
+
+/* 圖表容器 — 佔滿剩餘高度 */
+.chart-container {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── K線資訊 懸浮框 — 手機優化 ── */
 .kinfo-float {
   position: absolute;
-  top: 8px; left: 8px;
+  top: 6px; left: 6px;
   z-index: 10;
-  display: flex; align-items: center; gap: 12px;
-  padding: 7px 14px;
-  background: rgba(10,14,26,0.82);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(10,14,26,0.88);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 10px;
+  border-radius: 8px;
   font-family: var(--mono);
-  font-size: 15px;
+  font-size: 11px;         /* 手機縮小字體 */
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
   pointer-events: none;
-  line-height: 1.4;
-  max-width: calc(100% - 16px);
+  line-height: 1.5;
+  max-width: calc(100% - 12px);
   overflow: hidden;
   text-overflow: ellipsis;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
-/* ── Strike Nav Buttons ── */
+/* ── Strike Nav Buttons — 手機觸控優化 ── */
 .chart-strike-nav {
   display: flex;
   flex-direction: column;
@@ -388,39 +447,19 @@ html, body {
   border: none;
   background: var(--surface2);
   color: var(--text2);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
-  padding: 4px 10px;
+  padding: 6px 10px;       /* 加大觸控區域 */
   cursor: pointer;
   transition: all .15s;
   border-radius: 4px;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 32px;
+  text-align: center;
 }
 .chart-strike-btn:first-child { border-radius: 4px 4px 0 0; }
-.chart-strike-btn:last-child { border-radius: 0 0 4px 4px; }
-.chart-strike-btn:active { background: var(--accent); color: #fff; transform: scale(.92); }
-.chart-tabs {
-  display: flex; align-items: center;
-  padding: 8px 12px; gap: 8px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-.chart-name {
-  font-family: var(--mono); font-size: 13px; font-weight: 800;
-  color: var(--text); white-space: nowrap;
-  flex-shrink: 0;
-  margin-right: auto;
-}
-.chart-tabs-right {
-  display: flex; align-items: center; gap: 6px;
-  flex-shrink: 0;
-}
-.chart-tab {
-  padding: 6px 12px; border: none; border-radius: var(--radius-xs);
-  font-family: var(--font); font-size: 12px; font-weight: 700;
-  background: var(--surface2); color: var(--text3); cursor: pointer;
-  transition: all .2s;
-}
-.chart-tab.active { background: var(--accent); color: #fff; }
+.chart-strike-btn:last-child  { border-radius: 0 0 4px 4px; }
+.chart-strike-btn:active { background: var(--accent); color: #fff; transform: scale(.90); }
 
 /* ── Backtest Row Controls ── */
 .bt-row { display: flex; gap: 8px; align-items: center; }
@@ -516,6 +555,25 @@ html, body {
   font-family: var(--mono); font-size: 12px;
   border-bottom: 1px solid var(--border);
 }
+
+/* 部位／成交紀錄／委託清單 — 大字無框版 */
+.ao-table-lg { width: 100%; border-collapse: collapse; }
+.ao-table-lg th {
+  padding: 10px 8px; text-align: center;
+  font-size: 12px; font-weight: 700; color: var(--text3);
+  border-bottom: 2px solid var(--border2);
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+.ao-table-lg td {
+  padding: 12px 8px; text-align: center;
+  font-family: var(--mono); font-size: 15px; font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.ao-table-lg tr:last-child td { border-bottom: none; }
+.ao-table-lg .red  { color: var(--red2); }
+.ao-table-lg .green { color: var(--green2); }
 
 /* ── Winner Badge ── */
 .winner-badge {
@@ -648,11 +706,18 @@ td.price-01 {
         <div class="section-label">匯入資料</div>
         <div class="card">
           <div class="card-body">
-            <div class="upload-zone" id="uploadZone">
-              <input type="file" id="folderInput" webkitdirectory directory multiple>
+            <div class="upload-zone" id="uploadZone" style="position:relative;cursor:pointer">
+              <input type="file" id="folderInput" webkitdirectory directory multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2">
               <div class="upload-icon">📁</div>
               <div class="upload-text">點擊選擇資料夾</div>
               <div class="upload-hint">含 OptionsDaily / Daily 的 ZIP 或 RPT 檔</div>
+            </div>
+            <div style="margin-top:10px">
+              <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--text2)">
+                <span>📄</span>
+                <span>或直接選多個 ZIP / RPT 檔案</span>
+                <input type="file" id="fileInput" multiple accept=".zip,.rpt" style="display:none">
+              </label>
             </div>
           </div>
         </div>
@@ -807,11 +872,11 @@ td.price-01 {
 
     <!-- ──── PAGE: K 線圖 (full height) ──── -->
     <div class="page" id="pageChart">
-      <div class="chart-page-layout">
+      <div class="chart-page-layout" id="chartPageLayout">
         <div class="chart-area" style="flex:1">
           <div class="chart-tabs">
             <div id="chartName" class="chart-name">—</div>
-            <span id="chartBtClock" style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent2);margin-left:10px;margin-right:auto;display:none"></span>
+            <span id="chartBtClock" style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent2);margin-left:6px;margin-right:auto;display:none"></span>
             <div class="chart-tabs-right">
               <button class="chart-tab active" id="tabTA" data-tab="ta">技術分析</button>
               <button class="chart-tab" id="tabTrend" data-tab="trend">走勢圖</button>
@@ -917,30 +982,24 @@ td.price-01 {
 
       <div class="section">
         <div class="section-label">部位</div>
-        <div class="card" style="overflow-x:auto">
-          <table class="ao-table"><thead><tr>
-            <th>商品</th><th>口數</th><th>均價</th><th>現價</th><th>P/L</th>
-          </tr></thead><tbody id="posBody"><tr><td colspan="5" class="empty-state" style="padding:20px">尚無部位</td></tr></tbody></table>
-        </div>
+        <table class="ao-table ao-table-lg"><thead><tr>
+          <th>商品</th><th>口數</th><th>均價</th><th>現價</th><th>P/L</th>
+        </tr></thead><tbody id="posBody"><tr><td colspan="5" class="empty-state" style="padding:20px">尚無部位</td></tr></tbody></table>
       </div>
 
       <div class="section">
         <div class="section-label">成交紀錄</div>
-        <div class="card" style="overflow-x:auto;max-height:200px">
-          <table class="ao-table"><thead><tr>
-            <th>時間</th><th>商品</th><th>買/賣</th><th>口</th><th>價</th><th>實現P/L</th>
-          </tr></thead><tbody id="ordBody"></tbody></table>
-        </div>
+        <table class="ao-table ao-table-lg"><thead><tr>
+          <th>時間</th><th>商品</th><th>買/賣</th><th>口</th><th>價</th><th>實現P/L</th>
+        </tr></thead><tbody id="ordBody"></tbody></table>
       </div>
 
       <div class="section">
         <div class="section-label">委託清單</div>
-        <div class="card" style="overflow-x:auto;max-height:200px">
-          <table class="ao-table"><thead><tr>
-            <th>時間</th><th>商品</th><th>買/賣</th><th>權利點</th><th>口</th><th>狀態</th><th>操作</th>
-          </tr></thead><tbody id="ltBody"></tbody></table>
-        </div>
-        <div style="margin-top:6px;font-size:12px;color:var(--text3)">未成交：<b id="ltWorkingCnt">0</b></div>
+        <table class="ao-table ao-table-lg"><thead><tr>
+          <th>時間</th><th>商品</th><th>買/賣</th><th>權利點</th><th>口</th><th>狀態</th><th>操作</th>
+        </tr></thead><tbody id="ltBody"></tbody></table>
+        <div style="margin-top:8px;font-size:13px;color:var(--text3)">未成交：<b id="ltWorkingCnt">0</b></div>
       </div>
 
       <div class="section">
@@ -1169,6 +1228,7 @@ td.price-01 {
 // ═══════════════════════════════════
 {
   const navItems=document.querySelectorAll('.nav-item'), pages=document.querySelectorAll('.page');
+  const topbar=document.querySelector('.topbar');
   navItems.forEach(item=>{
     item.addEventListener('click',()=>{
       const target=item.dataset.page;
@@ -1176,7 +1236,21 @@ td.price-01 {
       item.classList.add('active');
       pages.forEach(p=>p.classList.toggle('active',p.id===target));
       document.getElementById('pageContent').scrollTop=0;
-      if(target==='pageChart') setTimeout(()=>{ try{chartTA.resize()}catch(_){} try{chartTrend.resize()}catch(_){} },60);
+
+      // 圖表頁：隱藏 topbar 最大化圖表；其他頁恢復
+      if(target==='pageChart'){
+        topbar.style.display='none';
+        document.querySelector('.chart-page-layout').style.height=
+          'calc(100dvh - 60px - var(--safe-bottom))';
+        setTimeout(()=>{
+          try{if(_lwcChart) _lwcChart.timeScale().fitContent();}catch(_){}
+          try{chartTrend.resize();}catch(_){}
+        },60);
+      } else {
+        topbar.style.display='';
+        const cpl=document.querySelector('.chart-page-layout');
+        if(cpl) cpl.style.height='calc(100dvh - 56px - 60px - var(--safe-bottom))';
+      }
     });
   });
 }
@@ -1184,15 +1258,20 @@ td.price-01 {
 // ═══════════════════════════════════
 // CORE ENGINE — FULL PORT FROM ORIGINAL
 // ═══════════════════════════════════
-const chartTA=echarts.init(document.getElementById('chartTA'));
 const chartTrend=echarts.init(document.getElementById('chartTrend'));
 let activeChartTab='ta';
+
+// ── LWC K線圖 state ──
+let _lwcChart=null, _lwcCandleSeries=null, _lwcVolumeSeries=null;
+let _lwcMaSeries={}; // {period: series}
+let _lwcPriceLine_high=null, _lwcPriceLine_high2=null;
+let _lwcPriceLine_low=null, _lwcPriceLine_low2=null;
+let _lwcPriceLine_open=null; // 開盤線
 
 let _kinfoUserHover=false;
 let _kinfoMode='txo'; // 'txo' or 'tx'
 
 // ── 用 DOM 事件可靠偵測游標是否在圖表上 ──
-// 比 ECharts showTip/hideTip 更穩定，不受回測 tick 干擾
 {
   const chartContainer=document.getElementById('chartTA');
   chartContainer.addEventListener('mouseenter',()=>{ _kinfoUserHover=true; });
@@ -1217,23 +1296,32 @@ function updateKinfoLast(){
   }
 }
 
-// ── ECharts 事件只綁一次 ──
-chartTA.on('showTip',(params)=>{
-  if(!_kinfoUserHover) return; // 不在圖表上（回測自動觸發的）略過
-  const arr=_kinfoMode==='tx'?_txKinfoKdata:_kinfoKdata;
-  const vols=_kinfoMode==='tx'?null:_kinfoVolumes;
-  const idx=params.dataIndex; if(idx==null||!arr[idx]) return;
-  const k=arr[idx]; const vol=vols?vols[idx]:'';
-  const cc=k[1]>=k[0]?'#ff1744':'#00e676';
-  const t=params.axisValueLabel||'';
-  if(_kinfoMode==='tx'){
-    kinfo.innerHTML=`<span style="color:var(--gold)">TX</span>&ensp;<span style="color:var(--text3)">${t}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>`;
-  } else {
-    kinfo.innerHTML=`<span style="color:var(--text3)">${t}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>&ensp;<span style="color:var(--text3)">量&nbsp;</span>${vol}`;
-  }
-});
-chartTA.on('hideTip', ()=>{ updateKinfoLast(); });
-chartTA.on('globalout', ()=>{ updateKinfoLast(); });
+// ── LWC crosshair move → update kinfo ──
+function _lwcBindCrosshair(){
+  if(!_lwcChart) return;
+  _lwcChart.subscribeCrosshairMove(param=>{
+    if(!_kinfoUserHover) return;
+    const arr=_kinfoMode==='tx'?_txKinfoKdata:_kinfoKdata;
+    const vols=_kinfoMode==='tx'?null:_kinfoVolumes;
+    if(!param.time||!arr.length){updateKinfoLast();return;}
+    // find index by time
+    const times=_kinfoMode==='tx'?_txKinfoTimes:_kinfoTimes;
+    let idx=-1;
+    if(times) idx=times.findIndex(t=>t===param.time);
+    if(idx<0){updateKinfoLast();return;}
+    const k=arr[idx]; if(!k){updateKinfoLast();return;}
+    const vol=vols?vols[idx]:'';
+    const cc=k[1]>=k[0]?'#ff1744':'#00e676';
+    // 台灣時間 HH:MM
+    const d=new Date(param.time*1000);
+    const tStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    if(_kinfoMode==='tx'){
+      kinfo.innerHTML=`<span style="color:var(--gold)">TX</span>&ensp;<span style="color:var(--text3)">${tStr}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>`;
+    } else {
+      kinfo.innerHTML=`<span style="color:var(--text3)">${tStr}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>&ensp;<span style="color:var(--text3)">量&nbsp;</span>${vol}`;
+    }
+  });
+}
 
 const expirySelect=document.getElementById('expirySelect');
 const strikeSelect=document.getElementById('strikeSelect');
@@ -1320,8 +1408,10 @@ let currentChartMode='txo'; // 'txo' | 'tx'
 let prevTTablePrices=new Map();
 let trendChartInited=false, trendChartKey='';
 let _txKinfoKdata=[], _txKinfoCutoff=null;
+let _txKinfoTimes=[]; // LWC unix timestamps for TX
 let taChartInited=false, taChartKey='';
 let _kinfoKdata=[], _kinfoVolumes=[], _kinfoCutoff=null;
+let _kinfoTimes=[]; // LWC unix timestamps for TXO
 let playTimes=[], playIndex=0, playTimer=null, playing=false;
 let cutoffTime=null, simTime=null;
 const lastTypeSelectionMap={};
@@ -1349,16 +1439,23 @@ function buildDataIndex(){
     arr.push(d);
   }
   dataIndex.forEach(arr=>arr.sort((a,b)=>a.dtms-b.dtms));
-  // TX：選成交量最大的 expiry 作為標的
+  // TX：只取格式正確的到期月份（YYYYMM，年份 2020~2099），選成交量最大的 expiry
   {
     const txVolByExpiry=new Map();
     for(const d of txRawData){
       const exp=(d.expiry||'').replace(/\s/g,'');
+      // 只接受 YYYYMM 格式，年份在合理範圍內
+      if(!/^\d{6}$/.test(exp)) continue;
+      const yr=parseInt(exp.slice(0,4));
+      if(yr<2020||yr>2099) continue;
       txVolByExpiry.set(exp,(txVolByExpiry.get(exp)||0)+(d.volume||0));
     }
     let bestExp=null, bestVol=-1;
     txVolByExpiry.forEach((vol,exp)=>{ if(vol>bestVol){bestVol=vol;bestExp=exp;} });
-    const filtered=bestExp!=null?txRawData.filter(d=>(d.expiry||'').replace(/\s/g,'')===bestExp):txRawData;
+    const filtered=bestExp!=null?txRawData.filter(d=>{
+      const exp=(d.expiry||'').replace(/\s/g,'');
+      return exp===bestExp;
+    }):txRawData;
     txDataIndex=filtered.slice().sort((a,b)=>a.dtms-b.dtms);
   }
 }
@@ -1426,8 +1523,8 @@ const decodeGuess=(buf)=>{
 };
 const readRPTEntry=async(zip,name)=>{ const buf=await zip.files[name].async('arraybuffer'); return decodeGuess(buf); };
 
-document.getElementById('folderInput').addEventListener('change',async(e)=>{
-  folderFiles=Array.from(e.target.files||[]); if(!folderFiles.length) return;
+async function handleFilesSelected(files){
+  folderFiles=Array.from(files||[]); if(!folderFiles.length) return;
   dateFileMap.clear();
   dateSelect.innerHTML='<option value="">解析中...</option>'; dateSelect.disabled=true;
   loadStatus.textContent=`掃描 ${folderFiles.length} 個檔案...`;
@@ -1451,7 +1548,10 @@ document.getElementById('folderInput').addEventListener('change',async(e)=>{
   }).join('');
   dateSelect.disabled=false;
   loadStatus.textContent=`找到 ${dates.length} 個交易日`;
-});
+}
+
+document.getElementById('folderInput').addEventListener('change',e=>handleFilesSelected(e.target.files));
+document.getElementById('fileInput').addEventListener('change',e=>handleFilesSelected(e.target.files));
 
 dateSelect.addEventListener('change',async()=>{
   const dateKey=dateSelect.value; if(!dateKey) return;
@@ -1839,14 +1939,109 @@ document.getElementById('chartStrikeDown').addEventListener('click',()=>{
   renderChart(cutoffTime);
 });
 
-// ── renderTA (TXO K-line) ──
+// ── LWC 初始化/重建 helper ──
+function _lwcInit(){
+  const container=document.getElementById('chartTA');
+  if(_lwcChart){ try{_lwcChart.remove();}catch(_){} _lwcChart=null; _lwcCandleSeries=null; _lwcVolumeSeries=null; _lwcMaSeries={}; }
+
+  // 台灣時間格式化（UTC+8）
+  const fmtTW=(unix)=>{
+    const d=new Date(unix*1000);
+    const h=String(d.getHours()).padStart(2,'0');
+    const m=String(d.getMinutes()).padStart(2,'0');
+    const s=String(d.getSeconds()).padStart(2,'0');
+    return `${h}:${m}:${s}`;
+  };
+
+  _lwcChart=LightweightCharts.createChart(container,{
+    autoSize:true,
+    layout:{background:{type:'solid',color:'transparent'},textColor:'rgba(138,150,176,0.8)',fontFamily:"'JetBrains Mono',monospace",fontSize:11},
+    grid:{vertLines:{color:'rgba(255,255,255,0.04)'},horzLines:{color:'rgba(255,255,255,0.04)'}},
+    crosshair:{mode:0,vertLine:{color:'rgba(255,255,255,0.2)',width:1,style:0},horzLine:{color:'rgba(255,255,255,0.2)',width:1,style:0}},
+    rightPriceScale:{borderColor:'rgba(255,255,255,0.06)',textColor:'rgba(138,150,176,0.7)'},
+    timeScale:{
+      borderColor:'rgba(255,255,255,0.06)',
+      timeVisible:true,
+      secondsVisible:false,
+      tickMarkFormatter:(time)=>{
+        const d=new Date(time*1000);
+        const h=String(d.getHours()).padStart(2,'0');
+        const m=String(d.getMinutes()).padStart(2,'0');
+        return `${h}:${m}`;
+      },
+    },
+    // 十字線 X 軸時間標籤 → 台灣時間
+    localization:{
+      timeFormatter:(unix)=>{
+        const d=new Date(unix*1000);
+        const h=String(d.getHours()).padStart(2,'0');
+        const m=String(d.getMinutes()).padStart(2,'0');
+        const s=String(d.getSeconds()).padStart(2,'0');
+        return `${h}:${m}:${s}`;
+      },
+    },
+    handleScroll:true, handleScale:true,
+  });
+  _lwcBindCrosshair();
+  _lwcCandleSeries=_lwcChart.addSeries(LightweightCharts.CandlestickSeries,{
+    upColor:'#ff1744', downColor:'#00e676',
+    borderUpColor:'#ff1744', borderDownColor:'#00e676',
+    wickUpColor:'#ff1744', wickDownColor:'#00e676',
+    priceScaleId:'right',
+  });
+  _lwcVolumeSeries=_lwcChart.addSeries(LightweightCharts.HistogramSeries,{
+    color:'rgba(96,165,250,0.25)',
+    priceFormat:{type:'volume'},
+    priceScaleId:'vol',
+  });
+  _lwcChart.priceScale('vol').applyOptions({scaleMargins:{top:0.8,bottom:0}});
+}
+
+function _lwcSetPriceLines(kdata, openPrice){
+  if(!_lwcCandleSeries) return;
+  // 移除舊的 price lines
+  [_lwcPriceLine_high,_lwcPriceLine_high2,_lwcPriceLine_low,_lwcPriceLine_low2,_lwcPriceLine_open]
+    .forEach(pl=>{try{if(pl) _lwcCandleSeries.removePriceLine(pl);}catch(_){}});
+  _lwcPriceLine_high=null; _lwcPriceLine_high2=null;
+  _lwcPriceLine_low=null;  _lwcPriceLine_low2=null;
+  _lwcPriceLine_open=null;
+  if(!kdata.length) return;
+  const highs=[...kdata].map(k=>k[3]).sort((a,b)=>b-a);
+  const lows=[...kdata].map(k=>k[2]).sort((a,b)=>a-b);
+  // LineStyle: 0=Solid, 2=Dashed
+  _lwcPriceLine_high=_lwcCandleSeries.createPriceLine({price:highs[0],color:'#ff5722',lineWidth:1,lineStyle:0,axisLabelVisible:true,title:'最高'});
+  if(highs[1]!=null&&highs[1]!==highs[0]) _lwcPriceLine_high2=_lwcCandleSeries.createPriceLine({price:highs[1],color:'#ffa726',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'次高'});
+  _lwcPriceLine_low=_lwcCandleSeries.createPriceLine({price:lows[0],color:'#2196f3',lineWidth:1,lineStyle:0,axisLabelVisible:true,title:'最低'});
+  if(lows[1]!=null&&lows[1]!==lows[0]) _lwcPriceLine_low2=_lwcCandleSeries.createPriceLine({price:lows[1],color:'#42a5f5',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'次低'});
+  // 開盤線
+  if(openPrice!=null&&Number.isFinite(openPrice)){
+    _lwcPriceLine_open=_lwcCandleSeries.createPriceLine({price:openPrice,color:'#f59e0b',lineWidth:1,lineStyle:2,axisLabelVisible:true,title:'開盤'});
+  }
+}
+
+function _lwcSetMAs(times,kdata,maPeriods,maColorMap){
+  // Remove old MA series
+  Object.values(_lwcMaSeries).forEach(s=>{try{_lwcChart.removeSeries(s);}catch(_){}});
+  _lwcMaSeries={};
+  if(!_lwcChart) return;
+  const closeArr=kdata.map(k=>k[1]);
+  maPeriods.forEach(p=>{
+    const maVals=calcMA(p,closeArr);
+    const maData=times.map((t,i)=>maVals[i]!=null?{time:t,value:maVals[i]}:null).filter(Boolean);
+    const s=_lwcChart.addSeries(LightweightCharts.LineSeries,{color:maColorMap[p]||'#fff',lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false,priceScaleId:'right'});
+    s.setData(maData);
+    _lwcMaSeries[p]=s;
+  });
+}
+
+// ── renderTA (TXO K-line) via LWC v5 ──
 function renderTA(cutoff=null){
   const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
   const session=sessionSelect.value, period=parseInt(periodSelect.value);
 
-  const newTAKey=`${expiry}|${strike}|${type}|${session}|${period}|${isDark}`;
+  const newTAKey=`${expiry}|${strike}|${type}|${session}|${period}`;
   const needFullRedraw=(newTAKey!==taChartKey)||!taChartInited;
-  if(needFullRedraw){chartTA.clear(); taChartKey=newTAKey; taChartInited=false;}
+  if(needFullRedraw){ taChartKey=newTAKey; taChartInited=false; }
   if(!expiry||!strike||!type){kinfo.innerText='請選擇檔案與條件'; chartName.textContent='—'; return;}
   chartName.textContent=`${expiry} ${strike}${type}`;
 
@@ -1864,78 +2059,56 @@ function renderTA(cutoff=null){
   }
 
   const timeKeys=Object.keys(grouped).sort();
-  const times=timeKeys.map(k=>new Date(+k));
-  const kdata=times.map(t=>{const g=grouped[t.getTime()]; return[g.open,g.close,g.low,g.high];});
-  const volumes=times.map(t=>grouped[t.getTime()].volume);
+  const times=timeKeys.map(k=>Math.floor(+k/1000)); // LWC uses unix seconds
+  const kdata=times.map((t,i)=>{const g=grouped[timeKeys[i]]; return[g.open,g.close,g.low,g.high];});
+  const volumes=times.map((t,i)=>grouped[timeKeys[i]].volume);
 
-  const closeArr=kdata.map(k=>k[1]);
+  // Rebuild LWC chart if needed
+  if(needFullRedraw) _lwcInit();
+
+  const candleData=times.map((t,i)=>({time:t, open:kdata[i][0], close:kdata[i][1], low:kdata[i][2], high:kdata[i][3]}));
+  const volumeData=times.map((t,i)=>({time:t, value:volumes[i], color:kdata[i][1]>=kdata[i][0]?'rgba(255,23,68,0.25)':'rgba(0,230,118,0.25)'}));
+
+  _lwcCandleSeries.setData(candleData);
+  _lwcVolumeSeries.setData(volumeData);
+
+  // MA lines
   const maPeriods=getMAPeriods();
-  const maMap={}; maPeriods.forEach(p=>{maMap[p]=calcMA(p,closeArr);});
   const maColorMap=getMAColorMap();
+  _lwcSetMAs(times,kdata,maPeriods,maColorMap);
 
-  // MarkLines — 每次都重算（回測時 cutoff 變化，最高最低也跟著變）
-  const markLineData=[];
-  if(times.length&&kdata.length){
-    const highs=kdata.map(k=>k[3]).sort((a,b)=>b-a);
-    const lows=kdata.map(k=>k[2]).sort((a,b)=>a-b);
-    const xVals=times.map(t=>t.toLocaleString());
-    times.forEach((t,idx)=>{if(t.getMinutes()===0||t.getMinutes()===30) markLineData.push({xAxis:xVals[idx],lineStyle:{color:'#555',type:'dashed',width:0.5},label:{show:false}});});
-    const addYL=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${text}\n${val}`,position:'insideStartTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
-    const addYR=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${val}\n${text}`,position:'insideEndTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
-    addYR(highs[0],'最高','#ff5722',false); addYR(highs[1]??highs[0],'次高','#ffa726',true);
-    addYL(lows[0],'最低','#2196f3',false); addYL(lows[1]??lows[0],'次低','#42a5f5',true);
-  }
+  // 開盤價：最早一根K線的 open（日盤=08:45開盤，夜盤=15:00開盤，全部=最早）
+  const openPrice=kdata.length>0?kdata[0][0]:null;
 
-  const series=[];
-  const candleOpt={type:'candlestick',data:kdata,itemStyle:{color:'#ff1744',color0:'#00e676',borderColor:'#ff1744',borderColor0:'#00e676',borderWidth:1}};
-  candleOpt.markLine={symbol:'none',silent:true,data:markLineData};
-  series.push(candleOpt);
+  // Price lines (最高/次高/最低/次低 + 開盤線)
+  _lwcSetPriceLines(kdata, openPrice);
 
-  maPeriods.forEach(p=>{
-    series.push({type:'line',name:`MA${p}`,data:maMap[p],smooth:true,showSymbol:false,symbol:'none',lineStyle:{width:1.2,opacity:0.7,color:maColorMap?.[p]||undefined}});
-  });
-  series.push({type:'bar',xAxisIndex:1,yAxisIndex:1,data:volumes,name:'成交量',itemStyle:{color:'rgba(96,165,250,0.25)'}});
-
-  const taOption={
-    backgroundColor:'transparent',
-    animation:needFullRedraw, animationDuration:needFullRedraw?400:0,
-    xAxis:[
-      {type:'category',data:times.map(t=>t.toLocaleString()),axisPointer:{type:'shadow'},axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},splitLine:{show:false}},
-      {type:'category',gridIndex:1,data:times.map(t=>t.toLocaleString()),axisLabel:{show:false},axisTick:{show:false},axisLine:{show:false}}
-    ],
-    series
-  };
+  // 初始化/切換商品/週期 → 滿版顯示所有K線
   if(needFullRedraw){
-    taOption.tooltip={trigger:'axis',axisPointer:{type:'cross',crossStyle:{color:'rgba(255,255,255,0.2)',width:1},lineStyle:{color:'rgba(255,255,255,0.15)',width:1}},confine:true,backgroundColor:'transparent',borderWidth:0,extraCssText:'box-shadow:none;padding:0;',formatter:()=>''};
-    taOption.dataZoom=[{type:'inside',xAxisIndex:[0,1]}];
-    taOption.yAxis=[{scale:true,axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},{scale:true,gridIndex:1,axisLabel:{show:false},splitLine:{show:false}}];
-    taOption.grid=[{left:46,right:50,top:14,bottom:70},{left:46,right:50,top:'78%',bottom:20}];
+    _lwcChart.timeScale().fitContent();
+    requestAnimationFrame(()=>{ try{_lwcChart.timeScale().fitContent();}catch(_){} });
   }
-
-  chartTA.setOption(taOption,needFullRedraw);
-  taChartInited=true;
 
   // 更新模組層級快照
-  _kinfoKdata=kdata; _kinfoVolumes=volumes; _kinfoCutoff=cutoff;
+  _kinfoKdata=kdata; _kinfoVolumes=volumes; _kinfoCutoff=cutoff; _kinfoTimes=times;
   _kinfoMode='txo';
   if(!_kinfoUserHover) updateKinfoLast();
+  taChartInited=true;
 }
 
-// ── renderTX (TX Futures K-line) ──
+// ── renderTX (TX Futures K-line) via LWC v5 ──
 function renderTX(cutoff=null){
   const period=parseInt(periodSelect.value)||5;
   const expiry=(expirySelect.value||'').replace(/\s/g,'');
   const session=sessionSelect.value;
 
-  const newTXKey=`tx|${expiry}|${session}|${period}|${isDark}`;
+  const newTXKey=`tx|${expiry}|${session}|${period}`;
   const needFullRedraw=(newTXKey!==taChartKey)||!taChartInited;
-  if(needFullRedraw){chartTA.clear(); taChartKey=newTXKey; taChartInited=false;}
+  if(needFullRedraw){ taChartKey=newTXKey; taChartInited=false; }
 
   const txCutMs=cutoff?+cutoff:Infinity;
   let data=[]; for(const d of txDataIndex){if(d.dtms>txCutMs) break; data.push(d);}
 
-  // TX: 不做 expiry 過濾，直接取所有在交易時段內的資料
-  // 同一時間點若有多筆（不同合約），取成交量最大的那筆（近月主力）
   data=data.filter(d=>withinSession(d.time));
   if(data.length){
     const byTime={};
@@ -1958,57 +2131,40 @@ function renderTX(cutoff=null){
   }
 
   const timeKeys=Object.keys(grouped).sort();
-  const times=timeKeys.map(k=>new Date(+k));
-  const kdata=times.map(t=>{const g=grouped[t.getTime()]; return[g.open,g.close,g.low,g.high];});
-  const volumes=times.map(t=>grouped[t.getTime()].volume);
+  const times=timeKeys.map(k=>Math.floor(+k/1000)); // unix seconds for LWC
+  const kdata=times.map((t,i)=>{const g=grouped[timeKeys[i]]; return[g.open,g.close,g.low,g.high];});
+  const volumes=times.map((t,i)=>grouped[timeKeys[i]].volume);
 
-  const closeArr=kdata.map(k=>k[1]);
+  if(needFullRedraw) _lwcInit();
+
+  const candleData=times.map((t,i)=>({time:t, open:kdata[i][0], close:kdata[i][1], low:kdata[i][2], high:kdata[i][3]}));
+  const volumeData=times.map((t,i)=>({time:t, value:volumes[i], color:kdata[i][1]>=kdata[i][0]?'rgba(255,23,68,0.25)':'rgba(0,230,118,0.25)'}));
+
+  _lwcCandleSeries.setData(candleData);
+  _lwcVolumeSeries.setData(volumeData);
+
+  // MA lines
   const maPeriods=getMAPeriods();
-  const maMap={}; maPeriods.forEach(p=>{maMap[p]=calcMA(p,closeArr);});
   const maColorMap=getMAColorMap();
+  _lwcSetMAs(times,kdata,maPeriods,maColorMap);
 
-  const highs=kdata.map(k=>k[3]).sort((a,b)=>b-a);
-  const lows=kdata.map(k=>k[2]).sort((a,b)=>a-b);
-  const highPrice=highs[0], lowPrice=lows[0];
+  // 開盤價：最早一根K線的 open
+  const openPrice=kdata.length>0?kdata[0][0]:null;
 
-  const markLineData=[];
-  if(times.length){
-    const xVals=times.map(t=>t.toLocaleString());
-    times.forEach((t,idx)=>{if(t.getMinutes()===0||t.getMinutes()===30) markLineData.push({xAxis:xVals[idx],lineStyle:{color:'#555',type:'dashed',width:0.5},label:{show:false}});});
-    const addYL=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${text}\n${val}`,position:'insideStartTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
-    const addYR=(val,text,color,dashed)=>{if(Number.isFinite(val)) markLineData.push({yAxis:val,label:{formatter:`${val}\n${text}`,position:'insideEndTop',color:color,fontWeight:700,fontSize:11,backgroundColor:'rgba(0,0,0,.75)',borderRadius:4,padding:[2,5],lineHeight:16},lineStyle:{color,type:dashed?'dashed':'solid',width:1}});};
-    addYR(highPrice,'最高','#ff5722',false); addYR(highs[1]??highPrice,'次高','#ffa726',true);
-    addYL(lowPrice,'最低','#2196f3',false); addYL(lows[1]??lowPrice,'次低','#42a5f5',true);
-  }
+  // Price lines (最高/次高/最低/次低 + 開盤線)
+  _lwcSetPriceLines(kdata, openPrice);
 
-  const candleOpt={type:'candlestick',data:kdata,itemStyle:{color:'#ff1744',color0:'#00e676',borderColor:'#ff1744',borderColor0:'#00e676',borderWidth:1}};
-  candleOpt.markLine={symbol:'none',silent:true,data:markLineData};
-  const series=[candleOpt];
-  maPeriods.forEach(p=>{series.push({type:'line',name:`MA${p}`,data:maMap[p],smooth:true,showSymbol:false,symbol:'none',lineStyle:{width:1.2,opacity:0.7,color:maColorMap?.[p]||undefined}});});
-  series.push({type:'bar',xAxisIndex:1,yAxisIndex:1,data:volumes,name:'成交量',itemStyle:{color:'rgba(96,165,250,0.25)'}});
-
-  const txOption={
-    backgroundColor:'transparent',
-    animation:needFullRedraw, animationDuration:needFullRedraw?400:0,
-    xAxis:[
-      {type:'category',data:times.map(t=>t.toLocaleString()),axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}},splitLine:{show:false}},
-      {type:'category',gridIndex:1,data:times.map(t=>t.toLocaleString()),axisLabel:{show:false},axisTick:{show:false},axisLine:{show:false}}
-    ],
-    series
-  };
+  // 初始化/切換週期 → 滿版顯示所有K線；回測步進 → 維持使用者當前視窗不動
   if(needFullRedraw){
-    txOption.tooltip={trigger:'axis',axisPointer:{type:'cross',crossStyle:{color:'rgba(255,255,255,0.2)',width:1},lineStyle:{color:'rgba(255,255,255,0.15)',width:1}},confine:true,backgroundColor:'transparent',borderWidth:0,extraCssText:'box-shadow:none;padding:0;',formatter:()=>''};
-    txOption.dataZoom=[{type:'inside',xAxisIndex:[0,1]}];
-    txOption.yAxis=[{scale:true,axisLabel:{color:'rgba(138,150,176,0.6)',fontSize:9},splitLine:{lineStyle:{color:'rgba(255,255,255,0.04)'}}},{scale:true,gridIndex:1,axisLabel:{show:false},splitLine:{show:false}}];
-    txOption.grid=[{left:46,right:50,top:14,bottom:70},{left:46,right:50,top:'78%',bottom:20}];
+    _lwcChart.timeScale().fitContent();
+    requestAnimationFrame(()=>{ try{_lwcChart.timeScale().fitContent();}catch(_){} });
   }
-  chartTA.setOption(txOption,needFullRedraw);
-  taChartInited=true;
 
-  // Crosshair move → update kinfo
-  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff;
+  // Crosshair / kinfo snapshot
+  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff; _txKinfoTimes=times;
   _kinfoMode='tx';
   if(!_kinfoUserHover) updateKinfoLast();
+  taChartInited=true;
 }
 
 // ── renderTrend (走勢圖 with red-above/green-below open price) ──
@@ -2598,7 +2754,10 @@ function renderAutoOrderStats(){
 // RESIZE
 // ═══════════════════════════════════
 window.addEventListener('resize',()=>{
-  try{chartTA.resize();}catch(_){}
+  try{
+    const el=document.getElementById('chartTA');
+    if(_lwcChart&&el) _lwcChart.resize(el.clientWidth,el.clientHeight);
+  }catch(_){}
   try{chartTrend.resize();}catch(_){}
 });
 </script>
