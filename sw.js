@@ -1,8 +1,12 @@
-const CACHE_NAME = 'txo-v6';
+const CACHE_NAME = 'txo-v7';
 const APP_SHELL = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-192-maskable.png',
+  './icon-512-maskable.png'
 ];
 
 // CDN 資源（ECharts、JSZip）— 網路優先，失敗再用快取
