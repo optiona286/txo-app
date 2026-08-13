@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v9-mobile-ui';
+const CACHE_NAME = 'txo-v10-mobile-density';
 const APP_SHELL = [
   './',
   './index.html',
