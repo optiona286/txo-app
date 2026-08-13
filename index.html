@@ -636,7 +636,10 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
 .terminal-head,
 .chart-terminal-head,
 .chart-tool-row,
-.chart-study-strip { display: none; }
+.chart-study-strip,
+.chart-volume-panel,
+.chart-market-row,
+.chart-indicator-tabs { display: none; }
 
 @media (max-width: 760px) {
   :root {
@@ -657,7 +660,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     --accent: #159fd0;
     --accent2: #6fdcff;
     --topbar-h: 52px;
-    --nav-h: 72px;
+    --nav-h: 64px;
   }
 
   body { background: #000; }
@@ -687,15 +690,15 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .nav-item {
     color: #30343a;
     gap: 5px;
-    padding: 8px 2px 7px;
-    font-size: 11px;
+    padding: 6px 2px 5px;
+    font-size: 10px;
     font-weight: 500;
     letter-spacing: 0;
     text-transform: none;
   }
   .nav-item.active { color: #0a1116; }
   .nav-item.active::before { display: none; }
-  .nav-icon { width: 28px; height: 28px; }
+  .nav-icon { width: 24px; height: 24px; }
   .nav-item.active .nav-icon { transform: none; }
   .nav-item.active .nav-icon::after {
     content: '';
@@ -703,7 +706,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     width: 6px; height: 6px;
     border-radius: 50%;
     background: #159fd0;
-    margin: 27px 0 0 22px;
+    margin: 24px 0 0 20px;
   }
 
   /* ── Option chain ── */
@@ -721,9 +724,9 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   #pageChain > .section > .section-label { display: none; }
   .terminal-head { display: block; flex-shrink: 0; background: #000; }
   .terminal-contract-row {
-    height: 55px;
+    height: 45px;
     display: grid;
-    grid-template-columns: 52px 1fr 58px 58px;
+    grid-template-columns: 44px 1fr 48px 48px;
     align-items: center;
     background: #07141c;
     border-bottom: 1px solid #263139;
@@ -740,65 +743,66 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     font: inherit;
   }
   .terminal-back,
-  .chart-back { font-size: 40px; line-height: 1; font-weight: 300; }
+  .chart-back { font-size: 34px; line-height: 1; font-weight: 300; }
   .terminal-expiry {
     text-align: center;
     font-family: var(--font);
-    font-size: 23px;
+    font-size: 20px;
     white-space: nowrap;
   }
   .terminal-step {
-    margin: 6px 3px;
-    height: 43px;
+    margin: 3px 2px;
+    height: 39px;
     background: #171d21;
-    font-size: 28px;
+    font-size: 24px;
   }
   .terminal-step:active,
   .chart-contract-step:active { background: #364047; }
   .terminal-symbol {
-    height: 56px;
-    padding: 5px 12px;
+    height: 32px;
+    padding: 2px 10px;
     display: flex;
     align-items: center;
-    font-size: 26px;
+    font-size: 21px;
     color: #f2ff00;
     border-bottom: 1px solid #333;
   }
   .terminal-quote {
-    min-height: 45px;
-    padding: 3px 9px;
+    height: 30px;
+    min-height: 30px;
+    padding: 1px 8px;
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto 1fr;
     align-items: center;
     gap: 7px;
     background: #4a4c4c;
-    font-family: var(--mono);
-    font-size: 18px;
+    font-family: Arial, var(--font);
+    font-size: 16px;
   }
-  .terminal-quote strong { color: var(--up2); font-size: 23px; font-weight: 500; }
-  .terminal-quote-change { color: var(--up2); font-size: 23px; text-align: right; }
+  .terminal-quote strong { color: var(--up2); font-size: 20px; font-weight: 500; }
+  .terminal-quote-change { color: var(--up2); font-size: 20px; text-align: right; white-space: nowrap; }
   .terminal-side-head {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    height: 48px;
-    font-size: 23px;
-    line-height: 48px;
+    height: 30px;
+    font-size: 20px;
+    line-height: 30px;
     text-align: center;
   }
   .terminal-side-head .call { background: #aa0000; }
   .terminal-side-head .put { background: #087500; }
 
-  .ttable { font-size: 22px; font-weight: 500; }
+  .ttable { font-family: Arial, var(--font); font-size: 20px; font-weight: 400; }
   .ttable thead { position: sticky; top: 0; z-index: 4; }
   .ttable th {
-    height: 47px;
+    height: 40px;
     padding: 4px 2px;
     background: #54a9c5 !important;
     color: #f5f5f5 !important;
     border-right: 1px solid rgba(0,0,0,.28);
     border-bottom: 1px solid #6dc1db;
     font-family: var(--font);
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 500;
   }
   .ttable th:nth-child(1), .ttable th:nth-child(2),
@@ -807,10 +811,10 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     color: #f5f5f5 !important;
   }
   .ttable td {
-    height: 54px;
-    padding: 4px 5px;
+    height: 40px;
+    padding: 2px 4px;
     border-bottom: 1px solid #282828;
-    font-weight: 500;
+    font-weight: 400;
     background: #000;
   }
   .ttable td:nth-child(1),
@@ -820,7 +824,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .ttable td.strike-cell {
     padding: 2px 1px;
     color: #efff14;
-    font-size: 22px;
+    font-size: 19px;
     font-weight: 500;
     background: linear-gradient(90deg,#318ca9,#54b7d4,#318ca9) !important;
     border-left: 1px solid #226c83;
@@ -835,7 +839,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .ttable .tag-n20c,
   .ttable .tag-n20p { font-size: 8px; padding: 0 3px; border-radius: 2px; }
   .ttable .cell-sub {
-    display: block;
+    display: none;
     color: #777;
     font-size: 9px;
     line-height: 10px;
@@ -844,12 +848,13 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
 
   /* ── Chart terminal ── */
   #pageChart { height: 100%; overflow: hidden; background: #000; }
-  .chart-page-layout { height: calc(100dvh - var(--nav-h) - var(--safe-bottom)); background: #000; }
+  .page-content.chart-fullscreen { padding-bottom: 0; }
+  .chart-page-layout { height: calc(100dvh - var(--safe-bottom)); background: #000; }
   .chart-terminal-head { display: block; flex-shrink: 0; }
   .chart-contract-row {
-    height: 55px;
+    height: 45px;
     display: grid;
-    grid-template-columns: 50px 38px 1fr 38px 50px;
+    grid-template-columns: 42px 32px 1fr 32px 42px;
     align-items: center;
     background: #07141c;
     border-bottom: 1px solid #263139;
@@ -860,16 +865,18 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    font-size: 18px;
+    font-size: 16px;
+    line-height: 1.05;
   }
-  .chart-contract-step { font-size: 29px; }
-  .chart-menu { font-size: 31px; letter-spacing: -4px; padding-right: 7px; }
+  .chart-contract-sub { display:block; margin-top:3px; color:#9ba2aa; font-size:10px; }
+  .chart-contract-step { font-size: 22px; }
+  .chart-menu { font-size: 27px; letter-spacing: -4px; padding-right: 6px; }
   .chart-tool-row {
     display: grid;
-    grid-template-columns: 78px 1fr 46px 46px;
-    gap: 4px;
-    height: 52px;
-    padding: 5px 4px;
+    grid-template-columns: 64px 1fr 42px 42px;
+    gap: 3px;
+    height: 34px;
+    padding: 3px 3px;
     background: #515151;
     border-bottom: 1px solid #222;
   }
@@ -879,16 +886,26 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     background: #242424;
     color: #f8f8f8;
     font-family: var(--font);
-    font-size: 16px;
+    font-size: 15px;
   }
-  .chart-tool.period { background: #dadada; color: #111; font-size: 19px; }
-  .chart-tool.pan { background: #00a7df; font-size: 24px; }
+  .chart-tool.period { background: #dadada; color: #111; font-size: 16px; }
+  .chart-tool.pan { background: #00a7df; font-size: 20px; }
   .chart-tabs {
-    height: 35px;
-    padding: 0 4px;
+    display: none;
+    height: 32px;
+    padding: 0 2px;
     background: #000;
     border-bottom: 1px solid #333;
   }
+  .chart-tabs.mobile-open {
+    display: flex;
+    position: absolute;
+    top: 0; right: 2px;
+    z-index: 30;
+    width: 205px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.7);
+  }
+  .chart-area { position: relative; }
   .chart-tabs .chart-name,
   .chart-tabs #chartBtClock,
   .chart-tabs .chart-strike-nav { display: none !important; }
@@ -911,36 +928,83 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     border: 0;
     border-radius: 0;
     box-shadow: none;
-    font-size: 10px;
+    font-size: 9px;
   }
   .chart-study-strip {
     display: flex;
     flex-shrink: 0;
-    min-height: 31px;
+    min-height: 27px;
     align-items: center;
-    gap: 7px;
-    padding: 2px 5px;
+    gap: 6px;
+    padding: 1px 4px;
     border-top: 1px solid #333;
     border-bottom: 1px solid #333;
     background: #000;
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 11px;
     overflow: hidden;
     white-space: nowrap;
   }
   .study-label {
-    min-width: 58px;
-    padding: 3px 9px;
+    min-width: 54px;
+    padding: 2px 8px;
     border-radius: 3px;
     background: #d0d0d0;
     color: #111;
     text-align: center;
     font-family: var(--font);
-    font-size: 15px;
+    font-size: 14px;
   }
   .study-ma5 { color: #f1e729; }
   .study-ma10 { color: #35cee9; }
   .study-ma20 { color: #a12bde; }
+
+  .chart-volume-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 118px;
+    min-height: 118px;
+    background: #000;
+    border-bottom: 1px solid #333;
+  }
+  .chart-volume-head {
+    height: 25px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 1px 4px;
+    border-bottom: 1px solid #242424;
+    font-family: Arial, var(--font);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .volume-panel-canvas { width: 100%; height: 93px; display: block; }
+  .chart-market-row {
+    display: flex;
+    flex: 0 0 25px;
+    min-height: 25px;
+    align-items: center;
+    gap: 9px;
+    padding: 1px 4px;
+    border-bottom: 1px solid #292929;
+    font-family: Arial, var(--font);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .chart-indicator-tabs {
+    display: grid;
+    grid-template-columns: repeat(5,1fr);
+    flex: 0 0 40px;
+    min-height: 40px;
+    align-items: center;
+    background: #000;
+    color: #aaa;
+    font-size: 11px;
+    text-align: center;
+  }
+  .chart-indicator-tabs span { padding: 7px 2px; border-right: 1px solid #333; }
+  .chart-indicator-tabs .active { margin: 3px 4px; border-radius: 4px; background: #777; color: #fff; }
 }
 
 </style>
@@ -1147,7 +1211,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
           <button class="terminal-step" id="chainExpiryPrev" type="button" aria-label="上一個到期月份">▲</button>
           <button class="terminal-step" id="chainExpiryNext" type="button" aria-label="下一個到期月份">▼</button>
         </div>
-        <div class="terminal-symbol">台指（TXO）</div>
+        <div class="terminal-symbol">台指(TXO)</div>
         <div class="terminal-quote">
           <span>時:<span id="chainClock">--:--:--</span></span>
           <span>價:<strong id="chainTxPrice">—</strong></span>
@@ -1194,9 +1258,12 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
           <div class="chart-contract-row">
             <button class="chart-back" id="chartBack" type="button" aria-label="返回報價表">‹</button>
             <button class="chart-contract-step" id="chartHeaderPrev" type="button" aria-label="上一檔履約價">◀</button>
-            <div class="chart-contract-name" id="chartHeaderName">—</div>
+            <div class="chart-contract-name">
+              <span id="chartHeaderName">—</span>
+              <span class="chart-contract-sub" id="chartHeaderSub">TXO</span>
+            </div>
             <button class="chart-contract-step" id="chartHeaderNext" type="button" aria-label="下一檔履約價">▶</button>
-            <button class="chart-menu" type="button" aria-label="圖表選項">☰</button>
+            <button class="chart-menu" id="chartMenuBtn" type="button" aria-label="圖表選項">☰</button>
           </div>
           <div class="chart-tool-row">
             <button class="chart-tool period" id="chartPeriodDisplay" type="button">5分&nbsp;›</button>
@@ -1228,6 +1295,19 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
             <span class="study-ma5" id="studyMa5">5T:—</span>
             <span class="study-ma10" id="studyMa10">10T:—</span>
             <span class="study-ma20" id="studyMa20">20T:—</span>
+          </div>
+          <div class="chart-volume-panel" aria-label="成交量圖">
+            <div class="chart-volume-head">
+              <span class="study-label">VOL&nbsp;›</span>
+              <span class="study-ma5" id="studyVolLast">5T:—</span>
+              <span class="study-ma10" id="studyVolAvg">10T:—</span>
+            </div>
+            <canvas class="volume-panel-canvas" id="volumePanelCanvas"></canvas>
+          </div>
+          <div class="chart-market-row"><span class="study-label">外資&nbsp;›</span><span style="color:#f5a623">買賣超:--張</span><span style="margin-left:auto;color:#35cee9">持股(估):--張</span></div>
+          <div class="chart-market-row"><span class="study-label">RSI&nbsp;›</span><span class="study-ma5" id="studyRsi5">5T:—</span><span id="studyRsi10" style="margin-left:auto;color:#35cee9">10T:—</span></div>
+          <div class="chart-indicator-tabs" aria-label="圖表指標分類">
+            <span class="active">常用</span><span>技術指標</span><span>當沖</span><span>追蹤主力</span><span>法人動向</span>
           </div>
         </div>
       </div>
@@ -1672,23 +1752,28 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
 {
   const navItems=document.querySelectorAll('.nav-item'), pages=document.querySelectorAll('.page');
   const topbar=document.querySelector('.topbar');
+  const bottomnav=document.querySelector('.bottomnav');
+  const pageContent=document.getElementById('pageContent');
   navItems.forEach(item=>{
     item.addEventListener('click',()=>{
       const target=item.dataset.page;
       navItems.forEach(n=>n.classList.remove('active'));
       item.classList.add('active');
       pages.forEach(p=>p.classList.toggle('active',p.id===target));
-      document.getElementById('pageContent').scrollTop=0;
+      pageContent.scrollTop=0;
+      pageContent.classList.toggle('chart-fullscreen',target==='pageChart');
+      bottomnav.style.display=target==='pageChart'?'none':'';
 
       // 行情報價與圖表頁使用自己的交易終端抬頭；其他頁恢復全域 topbar
       if(target==='pageChart'||target==='pageChain'){
         topbar.style.display='none';
         if(target==='pageChart'){
           document.querySelector('.chart-page-layout').style.height=
-            'calc(100dvh - var(--nav-h) - var(--safe-bottom))';
+            'calc(100dvh - var(--safe-bottom))';
           setTimeout(()=>{
             try{if(_lwcChart) _lwcChart.timeScale().fitContent();}catch(_){}
             try{chartTrend.resize();}catch(_){}
+            try{drawVolumePanel();}catch(_){}
           },60);
         }
       } else {
@@ -1782,6 +1867,7 @@ function syncTerminalChrome(){
   const expiry=expirySelect.value||'—';
   const chainExpiry=document.getElementById('chainExpiry');
   const chartHeaderName=document.getElementById('chartHeaderName');
+  const chartHeaderSub=document.getElementById('chartHeaderSub');
   const periodDisplay=document.getElementById('chartPeriodDisplay');
   const chainTxPrice=document.getElementById('chainTxPrice');
   const chainTxChange=document.getElementById('chainTxChange');
@@ -1790,10 +1876,12 @@ function syncTerminalChrome(){
   const txChg2=document.getElementById('txChg2');
   if(chainExpiry) chainExpiry.textContent=`台指 ${expiry}`;
   if(chartHeaderName) chartHeaderName.textContent=chartNameNode?.textContent||'—';
+  if(chartHeaderSub) chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
   if(periodDisplay) periodDisplay.innerHTML=`${periodSelect.value||5}分&nbsp;›`;
   if(chainTxPrice) chainTxPrice.textContent=txPrice2?.textContent||'—';
   if(chainTxChange){
-    chainTxChange.textContent=txChg2?.textContent||'—';
+    const rawChange=txChg2?.textContent||'—';
+    chainTxChange.textContent=rawChange.split(' ')[0];
     chainTxChange.style.color=txChg2?.classList.contains('down')?'var(--dn2)':'var(--up2)';
   }
 }
@@ -1813,6 +1901,7 @@ document.getElementById('chainExpiryNext')?.addEventListener('click',()=>moveExp
 document.getElementById('chartBack')?.addEventListener('click',()=>document.querySelector('.nav-item[data-page="pageChain"]')?.click());
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
+document.getElementById('chartMenuBtn')?.addEventListener('click',()=>document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open'));
 expirySelect.addEventListener('change',syncTerminalChrome);
 periodSelect.addEventListener('change',syncTerminalChrome);
 new MutationObserver(syncTerminalChrome).observe(document.getElementById('chartName'),{childList:true,subtree:true,characterData:true});
@@ -1829,7 +1918,61 @@ function updateStudyStrip(kdata, periods){
   update('studyMa5',periods.includes(5)?5:periods[0]||5);
   update('studyMa10',periods.includes(10)?10:periods[1]||10);
   update('studyMa20',periods.includes(20)?20:periods[2]||20);
+  const updateRSI=(id,period)=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(closes.length<=period){el.textContent=`${period}T:—`;return;}
+    const recent=closes.slice(-period-1); let gains=0,losses=0;
+    for(let i=1;i<recent.length;i++){const diff=recent[i]-recent[i-1];if(diff>=0)gains+=diff;else losses-=diff;}
+    const rsi=losses===0?(gains===0?50:100):100-(100/(1+(gains/period)/(losses/period)));
+    el.textContent=`${period}T:${rsi.toFixed(2)}`;
+  };
+  updateRSI('studyRsi5',5); updateRSI('studyRsi10',10);
 }
+
+let _volumePanelKdata=[], _volumePanelVolumes=[];
+function updateVolumePanel(kdata,volumes){
+  _volumePanelKdata=kdata||[];
+  _volumePanelVolumes=volumes||[];
+  const last=_volumePanelVolumes.at(-1);
+  const avg10=_volumePanelVolumes.length?Math.round(_volumePanelVolumes.slice(-10).reduce((sum,n)=>sum+n,0)/Math.min(10,_volumePanelVolumes.length)):null;
+  const lastEl=document.getElementById('studyVolLast'); if(lastEl) lastEl.textContent=`5T:${last??'—'}`;
+  const avgEl=document.getElementById('studyVolAvg'); if(avgEl) avgEl.textContent=`10T:${avg10??'—'}`;
+  requestAnimationFrame(drawVolumePanel);
+}
+
+function drawVolumePanel(){
+  const canvas=document.getElementById('volumePanelCanvas');
+  if(!canvas||!canvas.clientWidth||!canvas.clientHeight) return;
+  const ratio=Math.min(window.devicePixelRatio||1,2);
+  const width=canvas.clientWidth, height=canvas.clientHeight;
+  canvas.width=Math.round(width*ratio); canvas.height=Math.round(height*ratio);
+  const ctx=canvas.getContext('2d'); ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.clearRect(0,0,width,height);
+  ctx.strokeStyle='#202020'; ctx.lineWidth=1;
+  [0.25,0.5,0.75].forEach(p=>{const y=Math.round(height*p)+.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke();});
+  if(!_volumePanelVolumes.length) return;
+  const count=Math.min(_volumePanelVolumes.length,Math.max(24,Math.floor(width/5)));
+  const vols=_volumePanelVolumes.slice(-count), candles=_volumePanelKdata.slice(-count);
+  const max=Math.max(...vols,1), step=width/count, barW=Math.max(2,step*.68);
+  vols.forEach((vol,i)=>{
+    const h=Math.max(1,(vol/max)*(height-5));
+    const candle=candles[i];
+    ctx.fillStyle=candle&&candle[1]>=candle[0]?'#ff172d':'#00e83f';
+    ctx.fillRect(i*step+(step-barW)/2,height-h,barW,h);
+  });
+  const drawMA=(period,color)=>{
+    ctx.strokeStyle=color; ctx.lineWidth=1; ctx.beginPath(); let started=false;
+    vols.forEach((_,i)=>{
+      if(i<period-1) return;
+      const avg=vols.slice(i-period+1,i+1).reduce((sum,n)=>sum+n,0)/period;
+      const x=i*step+step/2, y=height-(avg/max)*(height-5);
+      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
+    });
+    if(started) ctx.stroke();
+  };
+  drawMA(5,'#f1e729'); drawMA(10,'#35cee9');
+}
+window.addEventListener('resize',()=>requestAnimationFrame(drawVolumePanel));
 
 // Chart tabs
 const tabTA=document.getElementById('tabTA'), tabTrend=document.getElementById('tabTrend');
@@ -2228,7 +2371,7 @@ function rebuildTTable(cutoff=null){
       if(sess!=='全部'&&!withinSession(r.time)) continue;
       strikesSet.add(strike);
       const vol=r.volume||0;
-      if(!o){o={last:r.price,lastDtms:r.dtms,vol:vol,vwap_num:r.price*vol};}
+      if(!o){o={open:r.price,last:r.price,lastDtms:r.dtms,vol:vol,vwap_num:r.price*vol};}
       else{o.vol+=vol; o.vwap_num+=r.price*vol; if(r.dtms>=o.lastDtms){o.last=r.price;o.lastDtms=r.dtms;}}
     }
     if(o) map.set(mapKey,o);
@@ -2238,7 +2381,7 @@ function rebuildTTable(cutoff=null){
   const rows=[];
   for(const s of strikes){
     const c=map.get(`${s}|${callStr}`), p=map.get(`${s}|${putStr}`);
-    rows.push({strike:s,cPrice:c?.last,cVol:c?.vol,pPrice:p?.last,pVol:p?.vol});
+    rows.push({strike:s,cPrice:c?.last,cOpen:c?.open,cVol:c?.vol,pPrice:p?.last,pOpen:p?.open,pVol:p?.vol});
   }
 
   // ATM detection (TX price based)
@@ -2304,9 +2447,8 @@ function rebuildTTable(cutoff=null){
     r._atm=(atmStrike!=null&&r.strike==atmStrike);
     r._n20c=!!(near20C&&r.strike==near20C.strike);
     r._n20p=!!(near20P&&r.strike==near20P.strike);
-    const prevC=prevTTablePrices.get(`${r.strike}|C`), prevP=prevTTablePrices.get(`${r.strike}|P`);
-    r.cChg=(r.cPrice!=null&&prevC!=null)?+(r.cPrice-prevC).toFixed(1):null;
-    r.pChg=(r.pPrice!=null&&prevP!=null)?+(r.pPrice-prevP).toFixed(1):null;
+    r.cChg=(r.cPrice!=null&&r.cOpen!=null)?+(r.cPrice-r.cOpen).toFixed(1):null;
+    r.pChg=(r.pPrice!=null&&r.pOpen!=null)?+(r.pPrice-r.pOpen).toFixed(1):null;
   }
   prevTTablePrices=newPrices;
 
@@ -2327,11 +2469,11 @@ function rebuildTTable(cutoff=null){
     const c01=(r.cPrice!=null&&Math.abs(r.cPrice-0.1)<0.0001)?' price-01':'';
     const p01=(r.pPrice!=null&&Math.abs(r.pPrice-0.1)<0.0001)?' price-01':'';
     return `<tr data-strike="${r.strike}" class="${rowCls}">
-      <td class="td-cvol" data-side="C" data-strike="${r.strike}" title="成交量 ${numberOrDash(r.cVol)}">${chgHtml(r.cChg)||'<span style="color:var(--text3)">—</span>'}<span class="cell-sub">量 ${numberOrDash(r.cVol)}</span></td>
+      <td class="td-cvol" data-side="C" data-strike="${r.strike}" title="成交量 ${numberOrDash(r.cVol)}">${chgHtml(r.cChg)||'<span style="color:var(--text3)">—</span>'}</td>
       <td class="td-c${r._n20c?' n20c':''}${c01}" data-side="C" data-strike="${r.strike}"><span class="${r.cChg>0?'red':r.cChg<0?'green':''}">${numberOrDash(r.cPrice)}</span></td>
       <td class="strike-cell" data-strike="${r.strike}">${r.strike}${tags?'<br><span style="font-size:10px">'+tags+'</span>':''}</td>
       <td class="td-p${r._n20p?' n20p':''}${p01}" data-side="P" data-strike="${r.strike}"><span class="${r.pChg>0?'red':r.pChg<0?'green':''}">${numberOrDash(r.pPrice)}</span></td>
-      <td class="td-pvol" data-side="P" data-strike="${r.strike}" title="成交量 ${numberOrDash(r.pVol)}">${chgHtml(r.pChg)||'<span style="color:var(--text3)">—</span>'}<span class="cell-sub">量 ${numberOrDash(r.pVol)}</span></td>
+      <td class="td-pvol" data-side="P" data-strike="${r.strike}" title="成交量 ${numberOrDash(r.pVol)}">${chgHtml(r.pChg)||'<span style="color:var(--text3)">—</span>'}</td>
     </tr>`;
   }).join('');
 
@@ -2759,7 +2901,7 @@ function _lwcInit(){
 
   _lwcChart=LightweightCharts.createChart(container,{
     autoSize:true,
-    layout:{background:{type:'solid',color:'transparent'},textColor:'rgba(138,150,176,0.8)',fontFamily:"'JetBrains Mono',monospace",fontSize:11},
+    layout:{background:{type:'solid',color:'transparent'},textColor:'rgba(185,188,196,0.88)',fontFamily:"Arial,'Noto Sans TC',sans-serif",fontSize:11},
     grid:{vertLines:{color:'rgba(255,255,255,0.04)'},horzLines:{color:'rgba(255,255,255,0.04)'}},
     crosshair:{mode:0,vertLine:{color:'rgba(255,255,255,0.2)',width:1,style:0},horzLine:{color:'rgba(255,255,255,0.2)',width:1,style:0}},
     rightPriceScale:{borderColor:'rgba(255,255,255,0.06)',textColor:'rgba(138,150,176,0.7)'},
@@ -2797,6 +2939,7 @@ function _lwcInit(){
     color:'rgba(96,165,250,0.25)',
     priceFormat:{type:'volume'},
     priceScaleId:'vol',
+    visible:false,
   });
   _lwcChart.priceScale('vol').applyOptions({scaleMargins:{top:0.8,bottom:0}});
 }
@@ -2875,6 +3018,7 @@ function renderTA(cutoff=null){
 
   _lwcCandleSeries.setData(candleData);
   _lwcVolumeSeries.setData(volumeData);
+  updateVolumePanel(kdata,volumes);
 
   // MA lines
   const maPeriods=getMAPeriods();
@@ -2947,6 +3091,7 @@ function renderTX(cutoff=null){
 
   _lwcCandleSeries.setData(candleData);
   _lwcVolumeSeries.setData(volumeData);
+  updateVolumePanel(kdata,volumes);
 
   // MA lines
   const maPeriods=getMAPeriods();
@@ -3123,7 +3268,7 @@ function rebuildPlayTimes(){
 
 function updateBtUI(){
   btClock.textContent=playTimes.length?fmtTime(playTimes[Math.min(playIndex,playTimes.length-1)]):'--:--:--';
-  const chainClock=document.getElementById('chainClock'); if(chainClock) chainClock.textContent=btClock.textContent;
+  const chainClock=document.getElementById('chainClock'); if(chainClock&&cutoffTime) chainClock.textContent=btClock.textContent;
   const infoLbl=document.getElementById('btInfoLabel');
   if(infoLbl) infoLbl.textContent=playTimes.length?`${playIndex+1} / ${playTimes.length}`:'';
   btStart.disabled=!playTimes.length||playing;
