@@ -637,9 +637,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
 .chart-terminal-head,
 .chart-tool-row,
 .chart-study-strip,
-.chart-volume-panel,
-.chart-market-row,
-.chart-indicator-tabs { display: none; }
+.chart-volume-panel { display: none; }
 
 @media (max-width: 760px) {
   :root {
@@ -979,32 +977,6 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     white-space: nowrap;
   }
   .volume-panel-canvas { width: 100%; height: 93px; display: block; }
-  .chart-market-row {
-    display: flex;
-    flex: 0 0 25px;
-    min-height: 25px;
-    align-items: center;
-    gap: 9px;
-    padding: 1px 4px;
-    border-bottom: 1px solid #292929;
-    font-family: Arial, var(--font);
-    font-size: 11px;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-  .chart-indicator-tabs {
-    display: grid;
-    grid-template-columns: repeat(5,1fr);
-    flex: 0 0 40px;
-    min-height: 40px;
-    align-items: center;
-    background: #000;
-    color: #aaa;
-    font-size: 11px;
-    text-align: center;
-  }
-  .chart-indicator-tabs span { padding: 7px 2px; border-right: 1px solid #333; }
-  .chart-indicator-tabs .active { margin: 3px 4px; border-radius: 4px; background: #777; color: #fff; }
 }
 
 </style>
@@ -1303,11 +1275,6 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
               <span class="study-ma10" id="studyVolAvg">10T:—</span>
             </div>
             <canvas class="volume-panel-canvas" id="volumePanelCanvas"></canvas>
-          </div>
-          <div class="chart-market-row"><span class="study-label">外資&nbsp;›</span><span style="color:#f5a623">買賣超:--張</span><span style="margin-left:auto;color:#35cee9">持股(估):--張</span></div>
-          <div class="chart-market-row"><span class="study-label">RSI&nbsp;›</span><span class="study-ma5" id="studyRsi5">5T:—</span><span id="studyRsi10" style="margin-left:auto;color:#35cee9">10T:—</span></div>
-          <div class="chart-indicator-tabs" aria-label="圖表指標分類">
-            <span class="active">常用</span><span>技術指標</span><span>當沖</span><span>追蹤主力</span><span>法人動向</span>
           </div>
         </div>
       </div>
@@ -1918,15 +1885,6 @@ function updateStudyStrip(kdata, periods){
   update('studyMa5',periods.includes(5)?5:periods[0]||5);
   update('studyMa10',periods.includes(10)?10:periods[1]||10);
   update('studyMa20',periods.includes(20)?20:periods[2]||20);
-  const updateRSI=(id,period)=>{
-    const el=document.getElementById(id); if(!el) return;
-    if(closes.length<=period){el.textContent=`${period}T:—`;return;}
-    const recent=closes.slice(-period-1); let gains=0,losses=0;
-    for(let i=1;i<recent.length;i++){const diff=recent[i]-recent[i-1];if(diff>=0)gains+=diff;else losses-=diff;}
-    const rsi=losses===0?(gains===0?50:100):100-(100/(1+(gains/period)/(losses/period)));
-    el.textContent=`${period}T:${rsi.toFixed(2)}`;
-  };
-  updateRSI('studyRsi5',5); updateRSI('studyRsi10',10);
 }
 
 let _volumePanelKdata=[], _volumePanelVolumes=[];
