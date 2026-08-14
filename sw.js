@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v12-underlying-switch';
+const CACHE_NAME = 'txo-v13-taiex-database';
 const APP_SHELL = [
   './',
   './index.html',
