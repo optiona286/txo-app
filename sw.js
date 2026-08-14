@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v10-mobile-density';
+const CACHE_NAME = 'txo-v11-chart-cleanup';
 const APP_SHELL = [
   './',
   './index.html',
