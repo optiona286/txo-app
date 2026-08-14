@@ -1052,22 +1052,43 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     <!-- ──── PAGE: 首頁 / 資料 ──── -->
     <div class="page active" id="pageHome">
       <div class="section">
-        <div class="section-label">匯入資料</div>
+        <div class="section-label">台指／台指選資料庫</div>
         <div class="card">
           <div class="card-body">
             <div class="upload-zone" id="uploadZone" style="position:relative;cursor:pointer">
               <input type="file" id="folderInput" webkitdirectory directory multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2">
               <div class="upload-icon">📁</div>
-              <div class="upload-text">點擊選擇資料夾</div>
-              <div class="upload-hint">含 OptionsDaily / Daily 的 ZIP、RPT，或加權 5 秒 CSV</div>
+              <div class="upload-text">選擇 TX／TXO 資料庫</div>
+              <div class="upload-hint">掃描年份資料夾內的 OptionsDaily / Daily ZIP 或 RPT</div>
             </div>
             <div style="margin-top:10px">
               <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);cursor:pointer;font-size:13px;color:var(--text2)">
                 <span>📄</span>
-                <span>或直接選多個 ZIP / RPT / CSV 檔案</span>
-                <input type="file" id="fileInput" multiple accept=".zip,.rpt,.csv" style="display:none">
+                <span>或直接選多個 ZIP / RPT</span>
+                <input type="file" id="fileInput" multiple accept=".zip,.rpt" style="display:none">
               </label>
             </div>
+            <div id="derivativeLoadStatus" class="info-text" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:16px">加權指數資料庫</div>
+        <div class="card">
+          <div class="card-body">
+            <div class="upload-zone" id="taiexUploadZone" style="position:relative;cursor:pointer">
+              <input type="file" id="taiexFolderInput" webkitdirectory directory multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2">
+              <div class="upload-icon">📈</div>
+              <div class="upload-text">選擇加權資料庫</div>
+              <div class="upload-hint">掃描年份資料夾內以日期命名的 CSV</div>
+            </div>
+            <div style="margin-top:10px">
+              <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);cursor:pointer;font-size:13px;color:var(--text2)">
+                <span>📄</span>
+                <span>或直接選多個加權 CSV</span>
+                <input type="file" id="taiexFileInput" multiple accept=".csv" style="display:none">
+              </label>
+            </div>
+            <div id="taiexLoadStatus" class="info-text" style="margin-top:8px"></div>
           </div>
         </div>
       </div>
@@ -2157,20 +2178,22 @@ function getLastPrice(expiry,strike,type,cutoff){
 }
 
 // ═══════════════════════════════════
-// FILE LOADING (identical to original)
+// DUAL DATABASE LOADING (TX/TXO + TAIEX)
 // ═══════════════════════════════════
-let folderFiles=[], dateFileMap=new Map();
+let folderFiles=[], taiexFolderFiles=[];
+let dateFileMap=new Map(), taiexFileMap=new Map();
 const dateSelect=document.getElementById('dateSelect');
 const loadStatus=document.getElementById('loadStatus');
+const derivativeLoadStatus=document.getElementById('derivativeLoadStatus');
+const taiexLoadStatus=document.getElementById('taiexLoadStatus');
 
 const decodeGuess=(buf)=>{
   const stripBom=(s)=>(s||'').replace(/^\uFEFF/,'');
-  const hasKey=(s)=>s&&(s.includes('成交日期')||s.includes('交易日期')||s.includes('商品代號'));
-  const tryDec=(enc)=>{ try{return new TextDecoder(enc,{fatal:false}).decode(buf)}catch(_){return null} };
-  let t=stripBom(tryDec('utf-8'));
-  if(hasKey(t)) return t;
-  t=stripBom(tryDec('big5'))||stripBom(tryDec('cp950'))||t||'';
-  return t;
+  try{return stripBom(new TextDecoder('utf-8',{fatal:true}).decode(buf));}
+  catch(_){
+    try{return stripBom(new TextDecoder('big5',{fatal:false}).decode(buf));}
+    catch(__){return stripBom(new TextDecoder('cp950',{fatal:false}).decode(buf));}
+  }
 };
 const readRPTEntry=async(zip,name)=>{ const buf=await zip.files[name].async('arraybuffer'); return decodeGuess(buf); };
 
@@ -2235,45 +2258,95 @@ function parseTaiexCSV(text,fallbackDateKey=''){
   return result;
 }
 
-async function handleFilesSelected(files){
-  folderFiles=Array.from(files||[]); if(!folderFiles.length) return;
-  dateFileMap.clear();
-  dateSelect.innerHTML='<option value="">解析中...</option>'; dateSelect.disabled=true;
-  loadStatus.textContent=`掃描 ${folderFiles.length} 個檔案...`;
-  document.getElementById('dateSection').style.display='';
+const dateKeyFromName=(name)=>{
+  const m=String(name||'').match(/(20\d{2})[_\-](\d{2})[_\-](\d{2})/);
+  return m?`${m[1]}_${m[2]}_${m[3]}`:'';
+};
 
-  const dateRe_opt=/^OptionsDaily[_\-]?(\d{4})[_\-](\d{2})[_\-](\d{2})/i;
-  const dateRe_fut=/^Daily[_\-]?(\d{4})[_\-](\d{2})[_\-](\d{2})/i;
-  for(const file of folderFiles){
-    const name=file.name||''; let m,dateKey,kind;
-    m=name.match(dateRe_opt); if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`; kind='op';}
-    else{ m=name.match(dateRe_fut); if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`; kind='fu';} }
-    if(!kind&&name.toLowerCase().endsWith('.csv')){
-      m=name.match(/(20\d{2})[_\-]?(\d{2})[_\-]?(\d{2})/);
-      if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`;kind='idx';}
-    }
-    if(!dateKey) continue;
-    if(!dateFileMap.has(dateKey)) dateFileMap.set(dateKey,{op:[],fu:[],idx:[]});
-    dateFileMap.get(dateKey)[kind].push(file);
+function refreshDateOptions(){
+  const previous=dateSelect.value;
+  const dates=[...new Set([...dateFileMap.keys(),...taiexFileMap.keys()])].sort((a,b)=>b.localeCompare(a));
+  document.getElementById('dateSection').style.display=dates.length?'':'none';
+  if(!dates.length){
+    dateSelect.innerHTML='<option value="">（請先選擇資料庫）</option>';
+    dateSelect.disabled=true;
+    loadStatus.textContent='';
+    return;
   }
-  const dates=Array.from(dateFileMap.keys()).sort((a,b)=>b.localeCompare(a));
-  if(!dates.length){ dateSelect.innerHTML='<option value="">未找到符合的資料</option>'; loadStatus.textContent='未偵測到 OptionsDaily / Daily 或日期命名的加權 CSV'; return; }
   dateSelect.innerHTML='<option value="">— 請選擇交易日 —</option>'+dates.map(d=>{
-    const info=dateFileMap.get(d);
-    const tags=[]; if(info.op.length) tags.push('OP'); if(info.fu.length) tags.push('FU'); if(info.idx.length) tags.push('加權');
-    const tag=(tags.length>1?'✓':'')+tags.join('+');
+    const info=dateFileMap.get(d)||{op:[],fu:[]};
+    const tags=[];
+    if(info.op.length) tags.push('OP');
+    if(info.fu.length) tags.push('FU');
+    if(taiexFileMap.has(d)) tags.push('加權');
+    const tag=(tags.length>1?'✓':'')+(tags.join('+')||'加權');
     return `<option value="${d}">${d.replace(/_/g,'/')}（${tag}）</option>`;
   }).join('');
   dateSelect.disabled=false;
-  loadStatus.textContent=`找到 ${dates.length} 個交易日`;
+  if(previous&&dates.includes(previous)) dateSelect.value=previous;
+  loadStatus.textContent=`可用日期 ${dates.length} 個`;
+}
+
+async function handleFilesSelected(files){
+  folderFiles=Array.from(files||[]);
+  dateFileMap.clear();
+  const dateReOpt=/^OptionsDaily[_\-]?(\d{4})[_\-](\d{2})[_\-](\d{2})/i;
+  const dateReFut=/^Daily[_\-]?(\d{4})[_\-](\d{2})[_\-](\d{2})/i;
+  let opCount=0,fuCount=0;
+  for(const file of folderFiles){
+    const name=file.name||''; let m,dateKey,kind;
+    m=name.match(dateReOpt);
+    if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`;kind='op';opCount++;}
+    else{
+      m=name.match(dateReFut);
+      if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`;kind='fu';fuCount++;}
+    }
+    if(!dateKey) continue;
+    if(!dateFileMap.has(dateKey)) dateFileMap.set(dateKey,{op:[],fu:[]});
+    dateFileMap.get(dateKey)[kind].push(file);
+  }
+  derivativeLoadStatus.textContent=dateFileMap.size
+    ?`已建立 ${dateFileMap.size} 個日期索引（OP ${opCount}／FU ${fuCount} 個檔案）`
+    :'未找到 OptionsDaily / Daily 日期檔案';
+  refreshDateOptions();
+  if(dateSelect.value) await loadSelectedDate();
+}
+
+async function handleTaiexFilesSelected(files){
+  taiexFolderFiles=Array.from(files||[]);
+  taiexFileMap.clear();
+  const years=new Set(); let csvCount=0;
+  for(const file of taiexFolderFiles){
+    if(!String(file.name||'').toLowerCase().endsWith('.csv')) continue;
+    const dateKey=dateKeyFromName(file.name);
+    if(!dateKey) continue;
+    const year=dateKey.slice(0,4);
+    const path=String(file.webkitRelativePath||'');
+    if(path){
+      const parts=path.split('/');
+      if(parts.includes(year)) years.add(year);
+    }else years.add(year);
+    if(!taiexFileMap.has(dateKey)) taiexFileMap.set(dateKey,[]);
+    taiexFileMap.get(dateKey).push(file);
+    csvCount++;
+  }
+  const yearText=[...years].sort().join('、');
+  taiexLoadStatus.textContent=taiexFileMap.size
+    ?`已建立 ${taiexFileMap.size} 個日期索引（${csvCount} 個 CSV${yearText?'；年份 '+yearText:''}）`
+    :'未找到以 YYYY-MM-DD 命名的加權 CSV';
+  refreshDateOptions();
+  if(dateSelect.value) await loadSelectedDate();
 }
 
 document.getElementById('folderInput').addEventListener('change',e=>handleFilesSelected(e.target.files));
 document.getElementById('fileInput').addEventListener('change',e=>handleFilesSelected(e.target.files));
+document.getElementById('taiexFolderInput').addEventListener('change',e=>handleTaiexFilesSelected(e.target.files));
+document.getElementById('taiexFileInput').addEventListener('change',e=>handleTaiexFilesSelected(e.target.files));
 
-dateSelect.addEventListener('change',async()=>{
+async function loadSelectedDate(){
   const dateKey=dateSelect.value; if(!dateKey) return;
-  const info=dateFileMap.get(dateKey); if(!info) return;
+  const info=dateFileMap.get(dateKey)||{op:[],fu:[]};
+  const taiexFiles=taiexFileMap.get(dateKey)||[];
   loadStatus.textContent='載入中...'; dateSelect.disabled=true;
   topStatus.textContent='載入中'; topStatus.className='topbar-status running';
 
@@ -2290,18 +2363,9 @@ dateSelect.addEventListener('change',async()=>{
     }
   }
 
-  for(const file of(info.idx||[])){
+  for(const file of taiexFiles){
     const name=(file.name||'').toLowerCase();
-    if(name.endsWith('.zip')){
-      try{
-        const zip=await JSZip.loadAsync(file);
-        const entries=Object.keys(zip.files).filter(n=>n.toLowerCase().endsWith('.csv')&&!zip.files[n].dir);
-        for(const csvName of entries){
-          const buf=await zip.files[csvName].async('arraybuffer');
-          taiexTexts.push(decodeGuess(buf));
-        }
-      }catch(err){console.warn('TAIEX ZIP error:',file.name,err);}
-    }else if(name.endsWith('.csv')){
+    if(name.endsWith('.csv')){
       try{taiexTexts.push(decodeGuess(await file.arrayBuffer()));}
       catch(err){console.warn('TAIEX CSV error:',file.name,err);}
     }
@@ -2322,8 +2386,9 @@ dateSelect.addEventListener('change',async()=>{
       return{date:d[0],product:d[1],expiry:(expiry||'').replace(/\s/g,''),time,dtms:+makeDateObj(d[0],time),price,volume};
     }).filter(d=>!isNaN(d.price)&&d.price>0);
 
-  // Parse TAIEX 5-second CSV. Supports either OHLC columns or a single TAIEX/price column.
-  taiexRawData=taiexTexts.flatMap(text=>parseTaiexCSV(text,dateKey));
+  // Parse TAIEX interval CSV, then de-duplicate identical timestamps.
+  const parsedTaiex=taiexTexts.flatMap(text=>parseTaiexCSV(text,dateKey));
+  taiexRawData=[...new Map(parsedTaiex.map(row=>[row.dtms,row])).values()].sort((a,b)=>a.dtms-b.dtms);
 
   buildDataIndex();
   resetAccount(); prevTTablePrices.clear();
@@ -2347,7 +2412,9 @@ dateSelect.addEventListener('change',async()=>{
   document.getElementById('btSection').style.display=rawData.length?'':'none';
   document.getElementById('txBarChain').style.display=(txRawData.length||taiexRawData.length)?'':'none';
   topStatus.textContent='已載入'; topStatus.className='topbar-status loaded';
-});
+}
+
+dateSelect.addEventListener('change',loadSelectedDate);
 
 // ═══════════════════════════════════
 // SELECTORS (faithful port)
