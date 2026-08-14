@@ -758,12 +758,25 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .chart-contract-step:active { background: #364047; }
   .terminal-symbol {
     height: 32px;
-    padding: 2px 10px;
+    padding: 2px 6px;
     display: flex;
     align-items: center;
-    font-size: 21px;
-    color: #f2ff00;
+    gap: 4px;
     border-bottom: 1px solid #333;
+  }
+  .underlying-choice {
+    flex: 1;
+    height: 27px;
+    border: 1px solid #333;
+    background: #111;
+    color: #9da2a6;
+    font-family: var(--font);
+    font-size: 15px;
+  }
+  .underlying-choice.active {
+    border-color: #4d8496;
+    background: #245f73;
+    color: #f2ff00;
   }
   .terminal-quote {
     height: 30px;
@@ -871,7 +884,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .chart-menu { font-size: 27px; letter-spacing: -4px; padding-right: 6px; }
   .chart-tool-row {
     display: grid;
-    grid-template-columns: 64px 1fr 42px 42px;
+    grid-template-columns: 64px 62px 1fr 42px 42px;
     gap: 3px;
     height: 34px;
     padding: 3px 3px;
@@ -887,6 +900,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     font-size: 15px;
   }
   .chart-tool.period { background: #dadada; color: #111; font-size: 16px; }
+  .chart-tool.underlying { background: #245f73; color: #f2ff00; font-size: 13px; }
   .chart-tool.pan { background: #00a7df; font-size: 20px; }
   .chart-tabs {
     display: none;
@@ -1045,13 +1059,13 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
               <input type="file" id="folderInput" webkitdirectory directory multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;z-index:2">
               <div class="upload-icon">📁</div>
               <div class="upload-text">點擊選擇資料夾</div>
-              <div class="upload-hint">含 OptionsDaily / Daily 的 ZIP 或 RPT 檔</div>
+              <div class="upload-hint">含 OptionsDaily / Daily 的 ZIP、RPT，或加權 5 秒 CSV</div>
             </div>
             <div style="margin-top:10px">
               <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r-md);cursor:pointer;font-size:13px;color:var(--text2)">
                 <span>📄</span>
-                <span>或直接選多個 ZIP / RPT 檔案</span>
-                <input type="file" id="fileInput" multiple accept=".zip,.rpt" style="display:none">
+                <span>或直接選多個 ZIP / RPT / CSV 檔案</span>
+                <input type="file" id="fileInput" multiple accept=".zip,.rpt,.csv" style="display:none">
               </label>
             </div>
           </div>
@@ -1183,7 +1197,10 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
           <button class="terminal-step" id="chainExpiryPrev" type="button" aria-label="上一個到期月份">▲</button>
           <button class="terminal-step" id="chainExpiryNext" type="button" aria-label="下一個到期月份">▼</button>
         </div>
-        <div class="terminal-symbol">台指(TXO)</div>
+        <div class="terminal-symbol" aria-label="OP 對應標的切換">
+          <button class="underlying-choice active" id="underlyingTx" type="button">台指期 TX</button>
+          <button class="underlying-choice" id="underlyingTaiex" type="button">加權 TAIEX</button>
+        </div>
         <div class="terminal-quote">
           <span>時:<span id="chainClock">--:--:--</span></span>
           <span>價:<strong id="chainTxPrice">—</strong></span>
@@ -1197,7 +1214,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
       <!-- TX 台指期貨 Bar (above T-table) -->
       <div id="txBarChain" style="display:none">
         <div class="tx-bar" style="border-radius:0;border-bottom:1px solid var(--border)">
-          <span class="tx-badge">TX</span>
+          <span class="tx-badge" id="underlyingBadge2">TX</span>
           <span class="tx-price" id="txPrice2">—</span>
           <span class="tx-chg flat" id="txChg2">—</span>
           <span class="tx-detail">開<span id="txOpen2">—</span></span>
@@ -1207,7 +1224,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
         </div>
       </div>
       <div class="section" style="padding:0">
-        <div class="section-label" style="padding:8px 16px 6px;margin:0">T 字報價表 <span style="font-size:9px;color:var(--text3);letter-spacing:0;text-transform:none;font-weight:400;margin-left:6px">點擊履約價 → 查看TX技術分析</span></div>
+        <div class="section-label" style="padding:8px 16px 6px;margin:0">T 字報價表 <span id="underlyingChartHint" style="font-size:9px;color:var(--text3);letter-spacing:0;text-transform:none;font-weight:400;margin-left:6px">點擊履約價 → 查看TX技術分析</span></div>
         <div class="ttable-wrap" style="max-height:calc(100dvh - 160px);overflow:auto">
             <table class="ttable">
               <thead>
@@ -1239,6 +1256,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
           </div>
           <div class="chart-tool-row">
             <button class="chart-tool period" id="chartPeriodDisplay" type="button">5分&nbsp;›</button>
+            <button class="chart-tool underlying" id="chartUnderlyingToggle" type="button">台指期</button>
             <button class="chart-tool" type="button">＋查價</button>
             <button class="chart-tool" type="button" aria-label="圖表設定">⚙</button>
             <button class="chart-tool pan" type="button" aria-label="平移圖表">✥</button>
@@ -1766,7 +1784,7 @@ let _lwcPriceLine_low=null, _lwcPriceLine_low2=null;
 let _lwcPriceLine_open=null; // 開盤線
 
 let _kinfoUserHover=false;
-let _kinfoMode='txo'; // 'txo' or 'tx'
+let _kinfoMode='txo'; // 'txo' | 'tx' | 'taiex'
 
 // ── 用 DOM 事件可靠偵測游標是否在圖表上 ──
 {
@@ -1780,11 +1798,12 @@ let _kinfoMode='txo'; // 'txo' or 'tx'
 
 // ── 集中管理 kinfo 更新，所有地方都呼叫這裡 ──
 function updateKinfoLast(){
-  if(_kinfoMode==='tx'){
+  if(_kinfoMode!=='txo'){
     if(!_txKinfoKdata.length) return;
     const last=_txKinfoKdata[_txKinfoKdata.length-1];
     const cc=last[1]>=last[0]?'#ff1744':'#00e676';
-    kinfo.innerHTML=`<span style="color:var(--gold)">TX</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${last[0]}</b>&ensp;高&nbsp;<b>${last[3]}</b>&ensp;低&nbsp;<b>${last[2]}</b>&ensp;收&nbsp;<b>${last[1]}</b></span>${_txKinfoCutoff?' &ensp;<span style="color:var(--text3)">'+fmtTime(_txKinfoCutoff)+'</span>':''}`;
+    const label=_kinfoMode==='taiex'?'TAIEX':'TX';
+    kinfo.innerHTML=`<span style="color:var(--gold)">${label}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${last[0]}</b>&ensp;高&nbsp;<b>${last[3]}</b>&ensp;低&nbsp;<b>${last[2]}</b>&ensp;收&nbsp;<b>${last[1]}</b></span>${_txKinfoCutoff?' &ensp;<span style="color:var(--text3)">'+fmtTime(_txKinfoCutoff)+'</span>':''}`;
   } else {
     if(!_kinfoKdata.length) return;
     const last=_kinfoKdata[_kinfoKdata.length-1], lastVol=_kinfoVolumes[_kinfoVolumes.length-1];
@@ -1798,11 +1817,12 @@ function _lwcBindCrosshair(){
   if(!_lwcChart) return;
   _lwcChart.subscribeCrosshairMove(param=>{
     if(!_kinfoUserHover) return;
-    const arr=_kinfoMode==='tx'?_txKinfoKdata:_kinfoKdata;
-    const vols=_kinfoMode==='tx'?null:_kinfoVolumes;
+    const isUnderlying=_kinfoMode!=='txo';
+    const arr=isUnderlying?_txKinfoKdata:_kinfoKdata;
+    const vols=isUnderlying?null:_kinfoVolumes;
     if(!param.time||!arr.length){updateKinfoLast();return;}
     // find index by time
-    const times=_kinfoMode==='tx'?_txKinfoTimes:_kinfoTimes;
+    const times=isUnderlying?_txKinfoTimes:_kinfoTimes;
     let idx=-1;
     if(times) idx=times.findIndex(t=>t===param.time);
     if(idx<0){updateKinfoLast();return;}
@@ -1812,8 +1832,9 @@ function _lwcBindCrosshair(){
     // 台灣時間 HH:MM
     const d=new Date(param.time*1000);
     const tStr=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-    if(_kinfoMode==='tx'){
-      kinfo.innerHTML=`<span style="color:var(--gold)">TX</span>&ensp;<span style="color:var(--text3)">${tStr}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>`;
+    if(isUnderlying){
+      const label=_kinfoMode==='taiex'?'TAIEX':'TX';
+      kinfo.innerHTML=`<span style="color:var(--gold)">${label}</span>&ensp;<span style="color:var(--text3)">${tStr}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>`;
     } else {
       kinfo.innerHTML=`<span style="color:var(--text3)">${tStr}</span>&ensp;<span style="color:${cc}">開&nbsp;<b>${k[0]}</b>&ensp;高&nbsp;<b>${k[3]}</b>&ensp;低&nbsp;<b>${k[2]}</b>&ensp;收&nbsp;<b>${k[1]}</b></span>&ensp;<span style="color:var(--text3)">量&nbsp;</span>${vol}`;
     }
@@ -1843,7 +1864,11 @@ function syncTerminalChrome(){
   const txChg2=document.getElementById('txChg2');
   if(chainExpiry) chainExpiry.textContent=`台指 ${expiry}`;
   if(chartHeaderName) chartHeaderName.textContent=chartNameNode?.textContent||'—';
-  if(chartHeaderSub) chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
+  if(chartHeaderSub){
+    if(currentChartMode==='tx') chartHeaderSub.textContent='TX 台指期';
+    else if(currentChartMode==='taiex') chartHeaderSub.textContent='TAIEX 加權指數';
+    else chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
+  }
   if(periodDisplay) periodDisplay.innerHTML=`${periodSelect.value||5}分&nbsp;›`;
   if(chainTxPrice) chainTxPrice.textContent=txPrice2?.textContent||'—';
   if(chainTxChange){
@@ -1851,6 +1876,26 @@ function syncTerminalChrome(){
     chainTxChange.textContent=rawChange.split(' ')[0];
     chainTxChange.style.color=txChg2?.classList.contains('down')?'var(--dn2)':'var(--up2)';
   }
+}
+
+function setUnderlyingMode(mode,{showChart=false}={}){
+  if(mode!=='tx'&&mode!=='taiex') return;
+  underlyingMode=mode;
+  document.getElementById('underlyingTx')?.classList.toggle('active',mode==='tx');
+  document.getElementById('underlyingTaiex')?.classList.toggle('active',mode==='taiex');
+  const chartToggle=document.getElementById('chartUnderlyingToggle');
+  if(chartToggle) chartToggle.textContent=mode==='tx'?'台指期':'加權';
+  const hint=document.getElementById('underlyingChartHint');
+  if(hint) hint.textContent=mode==='tx'?'點擊履約價 → 查看TX技術分析':'點擊履約價 → 查看加權技術分析';
+  if(showChart||currentChartMode==='tx'||currentChartMode==='taiex'){
+    currentChartMode=mode;
+    taChartInited=false; taChartKey='';
+    renderChart(cutoffTime);
+  }
+  rebuildPlayTimes();
+  rebuildTTable(cutoffTime);
+  updateUnderlyingBar(cutoffTime);
+  syncTerminalChrome();
 }
 
 function moveExpiryFromTerminal(offset){
@@ -1869,6 +1914,9 @@ document.getElementById('chartBack')?.addEventListener('click',()=>document.quer
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
 document.getElementById('chartMenuBtn')?.addEventListener('click',()=>document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open'));
+document.getElementById('underlyingTx')?.addEventListener('click',()=>setUnderlyingMode('tx'));
+document.getElementById('underlyingTaiex')?.addEventListener('click',()=>setUnderlyingMode('taiex'));
+document.getElementById('chartUnderlyingToggle')?.addEventListener('click',()=>setUnderlyingMode(underlyingMode==='tx'?'taiex':'tx',{showChart:true}));
 expirySelect.addEventListener('change',syncTerminalChrome);
 periodSelect.addEventListener('change',syncTerminalChrome);
 new MutationObserver(syncTerminalChrome).observe(document.getElementById('chartName'),{childList:true,subtree:true,characterData:true});
@@ -2001,11 +2049,12 @@ function calcMA(period,values){
 }
 
 // ====== State ======
-let rawData=[], txRawData=[];
+let rawData=[], txRawData=[], taiexRawData=[];
 let isDark=true; // mobile is always dark
 let typeAliases={call:null,put:null};
 let selectedSide=null;
-let currentChartMode='txo'; // 'txo' | 'tx'
+let underlyingMode='tx'; // OP 對應標的：'tx' | 'taiex'
+let currentChartMode='txo'; // 'txo' | 'tx' | 'taiex'
 let prevTTablePrices=new Map();
 let trendChartInited=false, trendChartKey='';
 let _txKinfoKdata=[], _txKinfoCutoff=null;
@@ -2016,7 +2065,7 @@ let _kinfoTimes=[]; // LWC unix timestamps for TXO
 let playTimes=[], playIndex=0, playTimer=null, playing=false;
 let cutoffTime=null, simTime=null;
 const lastTypeSelectionMap={};
-let dataIndex=new Map(), txDataIndex=[];
+let dataIndex=new Map(), txDataIndex=[], taiexDataIndex=[];
 
 // Auto order state
 let autoOrderActive=false, autoOrderPositions=[], autoOrderEnteredKeys=new Set();
@@ -2059,6 +2108,7 @@ function buildDataIndex(){
     }):txRawData;
     txDataIndex=filtered.slice().sort((a,b)=>a.dtms-b.dtms);
   }
+  taiexDataIndex=taiexRawData.slice().sort((a,b)=>a.dtms-b.dtms);
 }
 
 function sanitizeTimeStr(s){ return(s||'').replace(/[^0-9]/g,'').padEnd(6,'0').slice(0,6); }
@@ -2124,6 +2174,67 @@ const decodeGuess=(buf)=>{
 };
 const readRPTEntry=async(zip,name)=>{ const buf=await zip.files[name].async('arraybuffer'); return decodeGuess(buf); };
 
+function splitCSVLine(line){
+  const out=[]; let value='', quoted=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'){
+      if(quoted&&line[i+1]==='"'){value+='"';i++;}
+      else quoted=!quoted;
+    }else if(ch===','&&!quoted){out.push(value.trim());value='';}
+    else value+=ch;
+  }
+  out.push(value.trim());
+  return out;
+}
+
+function parseTaiexCSV(text,fallbackDateKey=''){
+  const lines=(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).filter(line=>line.trim());
+  if(lines.length<2) return [];
+  const headers=splitCSVLine(lines[0]).map(h=>h.trim().toLowerCase().replace(/[^a-z0-9]/g,''));
+  const col=(...names)=>{
+    for(const name of names){const i=headers.indexOf(name.toLowerCase().replace(/[^a-z0-9]/g,''));if(i>=0)return i;}
+    return -1;
+  };
+  const dateCol=col('date','tradingdate');
+  const timeCol=col('time','datetime','timestamp');
+  const openCol=col('open');
+  const highCol=col('max','high');
+  const lowCol=col('min','low');
+  const closeCol=col('close');
+  const valueCol=col('taiex','price','value','index');
+  const volumeCol=col('volume','tradingvolume');
+  const result=[];
+
+  for(let i=1;i<lines.length;i++){
+    const cells=splitCSVLine(lines[i]);
+    const dateRaw=dateCol>=0?(cells[dateCol]||''):'';
+    const timeRaw=timeCol>=0?(cells[timeCol]||''):'';
+    const dateSource=dateRaw||(/20\d{2}/.test(timeRaw)?timeRaw:fallbackDateKey);
+    const dateMatch=String(dateSource).match(/(20\d{2})\D?(\d{2})\D?(\d{2})/);
+    const timeMatch=timeCol>=0
+      ?String(timeRaw).match(/(?:T|\s|^)(\d{2}):?(\d{2}):?(\d{2})(?:\D|$)/)
+      :String(dateRaw).match(/(?:T|\s)(\d{2}):?(\d{2}):?(\d{2})(?:\D|$)/);
+    if(!dateMatch||!timeMatch) continue;
+    const date=`${dateMatch[1]}${dateMatch[2]}${dateMatch[3]}`;
+    const time=`${timeMatch[1]}${timeMatch[2]}${timeMatch[3]}`;
+    const numAt=(idx)=>idx>=0?Number(cells[idx]):NaN;
+    const value=numAt(valueCol);
+    const open=numAt(openCol), high=numAt(highCol), low=numAt(lowCol), close=numAt(closeCol);
+    const o=Number.isFinite(open)?open:value;
+    const h=Number.isFinite(high)?high:value;
+    const l=Number.isFinite(low)?low:value;
+    const c=Number.isFinite(close)?close:value;
+    if(![o,h,l,c].every(Number.isFinite)) continue;
+    result.push({
+      date,time,dtms:+makeDateObj(date,time),
+      open:o,high:h,low:l,close:c,price:c,
+      volume:Math.max(0,numAt(volumeCol)||0)
+    });
+  }
+  return result;
+}
+
 async function handleFilesSelected(files){
   folderFiles=Array.from(files||[]); if(!folderFiles.length) return;
   dateFileMap.clear();
@@ -2137,14 +2248,20 @@ async function handleFilesSelected(files){
     const name=file.name||''; let m,dateKey,kind;
     m=name.match(dateRe_opt); if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`; kind='op';}
     else{ m=name.match(dateRe_fut); if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`; kind='fu';} }
+    if(!kind&&name.toLowerCase().endsWith('.csv')){
+      m=name.match(/(20\d{2})[_\-]?(\d{2})[_\-]?(\d{2})/);
+      if(m){dateKey=`${m[1]}_${m[2]}_${m[3]}`;kind='idx';}
+    }
     if(!dateKey) continue;
-    if(!dateFileMap.has(dateKey)) dateFileMap.set(dateKey,{op:[],fu:[]});
+    if(!dateFileMap.has(dateKey)) dateFileMap.set(dateKey,{op:[],fu:[],idx:[]});
     dateFileMap.get(dateKey)[kind].push(file);
   }
   const dates=Array.from(dateFileMap.keys()).sort((a,b)=>b.localeCompare(a));
-  if(!dates.length){ dateSelect.innerHTML='<option value="">未找到符合的資料</option>'; loadStatus.textContent='未偵測到 OptionsDaily / Daily 命名的檔案'; return; }
+  if(!dates.length){ dateSelect.innerHTML='<option value="">未找到符合的資料</option>'; loadStatus.textContent='未偵測到 OptionsDaily / Daily 或日期命名的加權 CSV'; return; }
   dateSelect.innerHTML='<option value="">— 請選擇交易日 —</option>'+dates.map(d=>{
-    const info=dateFileMap.get(d); const tag=info.op.length&&info.fu.length?'✓OP+FU':info.op.length?'OP':'FU';
+    const info=dateFileMap.get(d);
+    const tags=[]; if(info.op.length) tags.push('OP'); if(info.fu.length) tags.push('FU'); if(info.idx.length) tags.push('加權');
+    const tag=(tags.length>1?'✓':'')+tags.join('+');
     return `<option value="${d}">${d.replace(/_/g,'/')}（${tag}）</option>`;
   }).join('');
   dateSelect.disabled=false;
@@ -2160,7 +2277,7 @@ dateSelect.addEventListener('change',async()=>{
   loadStatus.textContent='載入中...'; dateSelect.disabled=true;
   topStatus.textContent='載入中'; topStatus.className='topbar-status running';
 
-  let rows=[];
+  let rows=[], taiexTexts=[];
   const appendLines=(text)=>{ if(text) text.split(/\r?\n/).forEach(l=>rows.push(l)); };
   for(const file of[...info.op,...info.fu]){
     const name=(file.name||'').toLowerCase();
@@ -2170,6 +2287,23 @@ dateSelect.addEventListener('change',async()=>{
       }catch(err){console.warn('ZIP error:',file.name,err);}
     }else if(name.endsWith('.rpt')){
       try{appendLines(decodeGuess(await file.arrayBuffer()));}catch(err){console.warn('RPT error:',file.name,err);}
+    }
+  }
+
+  for(const file of(info.idx||[])){
+    const name=(file.name||'').toLowerCase();
+    if(name.endsWith('.zip')){
+      try{
+        const zip=await JSZip.loadAsync(file);
+        const entries=Object.keys(zip.files).filter(n=>n.toLowerCase().endsWith('.csv')&&!zip.files[n].dir);
+        for(const csvName of entries){
+          const buf=await zip.files[csvName].async('arraybuffer');
+          taiexTexts.push(decodeGuess(buf));
+        }
+      }catch(err){console.warn('TAIEX ZIP error:',file.name,err);}
+    }else if(name.endsWith('.csv')){
+      try{taiexTexts.push(decodeGuess(await file.arrayBuffer()));}
+      catch(err){console.warn('TAIEX CSV error:',file.name,err);}
     }
   }
 
@@ -2188,6 +2322,9 @@ dateSelect.addEventListener('change',async()=>{
       return{date:d[0],product:d[1],expiry:(expiry||'').replace(/\s/g,''),time,dtms:+makeDateObj(d[0],time),price,volume};
     }).filter(d=>!isNaN(d.price)&&d.price>0);
 
+  // Parse TAIEX 5-second CSV. Supports either OHLC columns or a single TAIEX/price column.
+  taiexRawData=taiexTexts.flatMap(text=>parseTaiexCSV(text,dateKey));
+
   buildDataIndex();
   resetAccount(); prevTTablePrices.clear();
   trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
@@ -2201,14 +2338,14 @@ dateSelect.addEventListener('change',async()=>{
   document.getElementById('statSub20').style.display='none';
 
   if(rawData.length){ updateSelectors(); rebuildPlayTimes(); renderChart(); rebuildTTable(); }
-  updateTXBar(); updateBtUI(); updateAccountUI();
+  updateUnderlyingBar(); updateBtUI(); updateAccountUI();
 
   const dateLabel=dateKey.replace(/_/g,'/');
-  loadStatus.textContent=`${dateLabel}：OP ${rawData.length.toLocaleString()} 筆 / FU ${txRawData.length.toLocaleString()} 筆`;
+  loadStatus.textContent=`${dateLabel}：OP ${rawData.length.toLocaleString()} 筆 / FU ${txRawData.length.toLocaleString()} 筆 / 加權 ${taiexRawData.length.toLocaleString()} 筆`;
   dateSelect.disabled=false;
   document.getElementById('selectorSection').style.display=rawData.length?'':'none';
   document.getElementById('btSection').style.display=rawData.length?'':'none';
-  document.getElementById('txBarChain').style.display=txRawData.length?'':'none';
+  document.getElementById('txBarChain').style.display=(txRawData.length||taiexRawData.length)?'':'none';
   topStatus.textContent='已載入'; topStatus.className='topbar-status loaded';
 });
 
@@ -2274,7 +2411,7 @@ expirySelect.addEventListener('change',()=>{
   typeAliases=detectTypeAliasesForExpiry(expirySelect.value);
   updateStrikes(); rebuildPlayTimes(); stopPlayback();
   cutoffTime=null; simTime=null; trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
-  prevTTablePrices.clear(); renderChart(); rebuildTTable(); updateAccountUI();
+  prevTTablePrices.clear(); renderChart(); rebuildTTable(); updateUnderlyingBar(); updateAccountUI();
 });
 strikeSelect.addEventListener('change',updateTypes);
 typeSelect.addEventListener('change',()=>{
@@ -2285,7 +2422,7 @@ typeSelect.addEventListener('change',()=>{
 });
 sessionSelect.addEventListener('change',()=>{
   rebuildPlayTimes(); stopPlayback(); cutoffTime=null; simTime=null;
-  renderChart(); rebuildTTable(); updateAccountUI();
+  renderChart(); rebuildTTable(); updateUnderlyingBar(); updateAccountUI();
 });
 periodSelect.addEventListener('change',()=>{
   taChartInited=false; taChartKey=''; renderChart(cutoffTime);
@@ -2342,11 +2479,19 @@ function rebuildTTable(cutoff=null){
     rows.push({strike:s,cPrice:c?.last,cOpen:c?.open,cVol:c?.vol,pPrice:p?.last,pOpen:p?.open,pVol:p?.vol});
   }
 
-  // ATM detection (TX price based)
+  // ATM detection：依目前選擇的對應標的（TX 或 TAIEX）
   let atmStrike=null;
   {
-    let txLastPx=null;
-    if(txDataIndex.length){
+    let underlyingLastPx=null;
+    if(underlyingMode==='taiex'&&taiexDataIndex.length){
+      for(let i=taiexDataIndex.length-1;i>=0;i--){
+        const d=taiexDataIndex[i];
+        if(cutoff&&d.dtms>+cutoff) continue;
+        if(!withinSession(d.time)) continue;
+        underlyingLastPx=d.close;
+        break;
+      }
+    }else if(underlyingMode==='tx'&&txDataIndex.length){
       const currentExpiry=(expirySelect.value||'').replace(/\s/g,'');
       const currentYM=currentExpiry.slice(0,6); // e.g. "202501"
 
@@ -2356,31 +2501,31 @@ function rebuildTTable(cutoff=null){
         if(cutoff&&d.dtms>+cutoff) continue;
         if(!withinSession(d.time)) continue;
         const dExp=(d.expiry||'').replace(/\s/g,'');
-        if(dExp===currentExpiry){txLastPx=d.price; break;}
+        if(dExp===currentExpiry){underlyingLastPx=d.price; break;}
       }
       // 2) Fallback: same year-month prefix (TX monthly vs TXO weekly)
-      if(txLastPx==null&&currentYM){
+      if(underlyingLastPx==null&&currentYM){
         for(let i=txDataIndex.length-1;i>=0;i--){
           const d=txDataIndex[i];
           if(cutoff&&d.dtms>+cutoff) continue;
           if(!withinSession(d.time)) continue;
           const dExp=(d.expiry||'').replace(/\s/g,'');
-          if(dExp.slice(0,6)===currentYM){txLastPx=d.price; break;}
+          if(dExp.slice(0,6)===currentYM){underlyingLastPx=d.price; break;}
         }
       }
       // 3) Fallback: next available expiry
-      if(txLastPx==null){
+      if(underlyingLastPx==null){
         for(let i=txDataIndex.length-1;i>=0;i--){
           const d=txDataIndex[i];
           if(cutoff&&d.dtms>+cutoff) continue;
           if(!withinSession(d.time)) continue;
-          txLastPx=d.price; break;
+          underlyingLastPx=d.price; break;
         }
       }
     }
-    if(txLastPx!=null){
+    if(underlyingLastPx!=null){
       let minDiff=Infinity;
-      for(const r of rows){const diff=Math.abs(parseFloat(r.strike)-txLastPx); if(diff<minDiff){minDiff=diff;atmStrike=r.strike;}}
+      for(const r of rows){const diff=Math.abs(parseFloat(r.strike)-underlyingLastPx); if(diff<minDiff){minDiff=diff;atmStrike=r.strike;}}
     }else{
       let minDiff=Infinity;
       for(const r of rows){if(r.cPrice!=null&&r.pPrice!=null){const diff=Math.abs(r.cPrice-r.pPrice); if(diff<minDiff){minDiff=diff;atmStrike=r.strike;}}}
@@ -2491,7 +2636,7 @@ tBody.addEventListener('click',(e)=>{
     document.querySelector('.nav-item[data-page="pageChart"]').click();
   }
   if(td.classList.contains('strike-cell')){
-    currentChartMode='tx';
+    currentChartMode=underlyingMode;
     setChartTab('ta');
     renderChart(cutoffTime);
     document.querySelector('.nav-item[data-page="pageChart"]').click();
@@ -2826,6 +2971,7 @@ tBody.addEventListener('contextmenu',(e)=>{
 // ═══════════════════════════════════
 function renderChart(cutoff=null){
   if(currentChartMode==='tx'){ renderTX(cutoff); renderTrend(cutoff); }
+  else if(currentChartMode==='taiex'){ renderTAIEX(cutoff); renderTrend(cutoff); }
   else{ renderTA(cutoff); renderTrend(cutoff); }
 }
 
@@ -3076,6 +3222,86 @@ function renderTX(cutoff=null){
   taChartInited=true;
 }
 
+function aggregateTaiexBars(data,period){
+  const grouped={};
+  for(const d of data){
+    const bucket=Math.floor(d.dtms/(60000*period))*(60000*period);
+    const key=String(bucket);
+    if(!grouped[key]) grouped[key]={open:d.open,high:null,low:null,close:d.close,volume:d.volume||0};
+    else{
+      grouped[key].close=d.close;
+      grouped[key].volume+=(d.volume||0);
+    }
+
+    // 加權指數特殊規則：09:00:05 只保留為開盤來源，不列入最高／最低。
+    if(sanitizeTimeStr(d.time)!=='090005'){
+      const g=grouped[key];
+      g.high=g.high==null?d.high:Math.max(g.high,d.high);
+      g.low=g.low==null?d.low:Math.min(g.low,d.low);
+    }
+  }
+  const timeKeys=Object.keys(grouped).sort().filter(key=>grouped[key].high!=null&&grouped[key].low!=null);
+  const times=timeKeys.map(key=>Math.floor(+key/1000));
+  const kdata=timeKeys.map(key=>{const g=grouped[key];return[g.open,g.close,g.low,g.high];});
+  const volumes=timeKeys.map(key=>grouped[key].volume);
+  return{times,kdata,volumes};
+}
+
+// ── renderTAIEX (加權指數 5-second data) via LWC v5 ──
+function renderTAIEX(cutoff=null){
+  const period=parseInt(periodSelect.value)||5;
+  const session=sessionSelect.value;
+  const newKey=`taiex|${session}|${period}`;
+  const needFullRedraw=(newKey!==taChartKey)||!taChartInited;
+  if(needFullRedraw){taChartKey=newKey;taChartInited=false;}
+
+  const cutMs=cutoff?+cutoff:Infinity;
+  const data=[];
+  for(const d of taiexDataIndex){
+    if(d.dtms>cutMs) break;
+    if(withinSession(d.time)) data.push(d);
+  }
+  if(!data.length){
+    kinfo.innerText='TAIEX 加權指數：無資料';
+    chartName.textContent='TAIEX 加權指數';
+    syncTerminalChrome();
+    return;
+  }
+  chartName.textContent='TAIEX 加權指數';
+
+  const {times,kdata,volumes}=aggregateTaiexBars(data,period);
+  // 尚未出現 09:00:10 前，第一根 K 線沒有合法高低價，暫不繪製。
+  if(!kdata.length){
+    kinfo.innerText='TAIEX 加權指數：等待 09:00:10 資料';
+    chartName.textContent='TAIEX 加權指數';
+    syncTerminalChrome();
+    return;
+  }
+
+  if(needFullRedraw) _lwcInit();
+  _lwcCandleSeries.setData(times.map((time,i)=>({time,open:kdata[i][0],close:kdata[i][1],low:kdata[i][2],high:kdata[i][3]})));
+  _lwcVolumeSeries.setData(times.map((time,i)=>({
+    time,value:volumes[i],
+    color:kdata[i][1]>=kdata[i][0]?'rgba(255,23,68,0.25)':'rgba(0,230,118,0.25)'
+  })));
+  updateVolumePanel(kdata,volumes);
+
+  const maPeriods=getMAPeriods();
+  _lwcSetMAs(times,kdata,maPeriods,getMAColorMap());
+  updateStudyStrip(kdata,maPeriods);
+  _lwcSetPriceLines(kdata,kdata[0][0]);
+  if(needFullRedraw){
+    _lwcChart.timeScale().fitContent();
+    requestAnimationFrame(()=>{try{_lwcChart.timeScale().fitContent();}catch(_){}});
+  }
+
+  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff; _txKinfoTimes=times;
+  _kinfoMode='taiex';
+  if(!_kinfoUserHover) updateKinfoLast();
+  taChartInited=true;
+  syncTerminalChrome();
+}
+
 // ── renderTrend (走勢圖 with red-above/green-below open price) ──
 function renderTrend(cutoff=null){
   const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
@@ -3167,7 +3393,9 @@ function renderTrend(cutoff=null){
 // ═══════════════════════════════════
 // TX BAR (expiry-aware, with %)
 // ═══════════════════════════════════
-function updateTXBar(cutoff){
+function updateUnderlyingBar(cutoff){
+  if(underlyingMode==='taiex') return updateTAIEXBar(cutoff);
+  const badge=document.getElementById('underlyingBadge2'); if(badge) badge.textContent='TX';
   const expiry=(expirySelect.value||'').replace(/\s/g,'');
   const txBarCutMs=cutoff?+cutoff:(cutoffTime?+cutoffTime:Infinity);
   let pool=[]; for(const d of txDataIndex){if(d.dtms>txBarCutMs) break; if(withinSession(d.time)) pool.push(d);}
@@ -3177,7 +3405,12 @@ function updateTXBar(cutoff){
     if(same.length) pool=same;
     else{const ym=expiry.slice(0,6); const sameYM=pool.filter(d=>(d.expiry||'').slice(0,6)===ym); if(sameYM.length) pool=sameYM; else{const allExp=[...new Set(pool.map(d=>(d.expiry||'').replace(/\s/g,'')))].sort(); const next=allExp.find(e=>e>expiry); if(next) pool=pool.filter(d=>(d.expiry||'').replace(/\s/g,'')===next);}}
   }
-  if(!pool.length) return;
+  if(!pool.length){
+    ['txPrice2','txChg2','txOpen2','txHigh2','txLow2','txVol2'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+    const chainClock=document.getElementById('chainClock'); if(chainClock) chainClock.textContent='--:--:--';
+    syncTerminalChrome();
+    return;
+  }
 
   const last=pool[pool.length-1];
   const dayPool=pool.filter(d=>d.date===last.date);
@@ -3206,6 +3439,47 @@ function updateTXBar(cutoff){
   syncTerminalChrome();
 }
 
+function updateTAIEXBar(cutoff){
+  const cutMs=cutoff?+cutoff:(cutoffTime?+cutoffTime:Infinity);
+  const pool=[];
+  for(const d of taiexDataIndex){
+    if(d.dtms>cutMs) break;
+    if(withinSession(d.time)) pool.push(d);
+  }
+  const setValue=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+  const badge=document.getElementById('underlyingBadge2'); if(badge) badge.textContent='TAIEX';
+  if(!pool.length){
+    ['txPrice2','txChg2','txOpen2','txHigh2','txLow2','txVol2'].forEach(id=>setValue(id,'—'));
+    const chainClock=document.getElementById('chainClock'); if(chainClock) chainClock.textContent='--:--:--';
+    syncTerminalChrome();
+    return;
+  }
+
+  const last=pool[pool.length-1];
+  const dayPool=pool.filter(d=>d.date===last.date);
+  const openPx=dayPool[0].open;
+  const highLowPool=dayPool.filter(d=>sanitizeTimeStr(d.time)!=='090005');
+  const highPx=highLowPool.length?Math.max(...highLowPool.map(d=>d.high)):null;
+  const lowPx=highLowPool.length?Math.min(...highLowPool.map(d=>d.low)):null;
+  const lastPx=last.close;
+  const chg=lastPx-openPx;
+  const pct=openPx?(chg/openPx*100):0;
+  const sign=chg>=0?'+':'';
+  const chgEl=document.getElementById('txChg2');
+  if(chgEl){
+    chgEl.textContent=`${sign}${chg.toFixed(2)} (${sign}${pct.toFixed(2)}%)`;
+    chgEl.className='tx-chg '+(chg>0?'up':chg<0?'down':'flat');
+  }
+  setValue('txPrice2',Number(lastPx.toFixed(2)));
+  setValue('txOpen2',Number(openPx.toFixed(2)));
+  setValue('txHigh2',highPx==null?'—':Number(highPx.toFixed(2)));
+  setValue('txLow2',lowPx==null?'—':Number(lowPx.toFixed(2)));
+  setValue('txVol2',fmtNum(dayPool.reduce((sum,d)=>sum+(d.volume||0),0)));
+  const txBarChain=document.getElementById('txBarChain'); if(txBarChain) txBarChain.style.display='';
+  const chainClock=document.getElementById('chainClock'); if(chainClock) chainClock.textContent=last.time||'--:--:--';
+  syncTerminalChrome();
+}
+
 // ═══════════════════════════════════
 // BACKTEST (faithful port with interval timer)
 // ═══════════════════════════════════
@@ -3216,8 +3490,9 @@ function rebuildPlayTimes(){
     if(!k.startsWith(expiry+'|')) return;
     for(const d of arr){if(withinSession(d.time)) tickSet.add(d.dtms);}
   });
-  // Also include TX timestamps
-  for(const d of txDataIndex){if(withinSession(d.time)) tickSet.add(d.dtms);}
+  // Include timestamps from the selected OP reference underlying only.
+  const underlyingIndex=underlyingMode==='taiex'?taiexDataIndex:txDataIndex;
+  for(const d of underlyingIndex){if(withinSession(d.time)) tickSet.add(d.dtms);}
   playTimes=Array.from(tickSet).sort((a,b)=>a-b).map(x=>new Date(x));
   playIndex=0; simTime=null;
   btProgress.min=0; btProgress.max=Math.max(0,playTimes.length-1); btProgress.value=0;
@@ -3258,7 +3533,7 @@ function setCutoffByIndex(i){
   checkLimitOrders(cutoffTime);
   tickAutoOrders(cutoffTime);
   updateAccountUI();
-  updateTXBar(cutoffTime);
+  updateUnderlyingBar(cutoffTime);
   // 儀表板開啟中 → 同步更新
   if(document.getElementById('opDashSheet').style.display!=='none'
      && document.getElementById('opDashSheet').style.transform==='translateY(0px)'){
@@ -3300,7 +3575,7 @@ function stopPlayback(){
     bt20Run.style.display=''; bt20Stop.style.display='none';
     renderAutoOrderTable(); renderAutoOrderStats();
   }
-  renderChart(); rebuildTTable(); updateBtUI(); updateAccountUI(); updateTXBar();
+  renderChart(); rebuildTTable(); updateBtUI(); updateAccountUI(); updateUnderlyingBar();
   topStatus.textContent=rawData.length?'已載入':'未載入';
   topStatus.className=rawData.length?'topbar-status loaded':'topbar-status idle';
 }
