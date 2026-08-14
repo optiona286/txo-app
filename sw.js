@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v11-chart-cleanup';
+const CACHE_NAME = 'txo-v12-underlying-switch';
 const APP_SHELL = [
   './',
   './index.html',
