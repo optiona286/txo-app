@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v14-chart-lookup-nav';
+const CACHE_NAME = 'txo-v15-chart-sync-navigation';
 const APP_SHELL = [
   './',
   './index.html',
