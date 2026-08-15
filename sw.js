@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v13-taiex-database';
+const CACHE_NAME = 'txo-v14-chart-lookup-nav';
 const APP_SHELL = [
   './',
   './index.html',
