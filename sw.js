@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v18-android-back-navigation';
+const CACHE_NAME = 'txo-v19-action-history-navigation';
 const APP_SHELL = [
   './',
   './index.html',
