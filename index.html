@@ -898,15 +898,41 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     background: #242424;
     color: #f8f8f8;
     font-family: var(--font);
-    font-size: 15px;
+    font-size: 16px;
   }
-  .chart-tool.period { background: #dadada; color: #111; font-size: 16px; }
-  .chart-tool.underlying { background: #245f73; color: #f2ff00; font-size: 13px; }
+  .chart-tool.period { background: #dadada; color: #111; }
+  .chart-tool.underlying { background: #245f73; color: #f2ff00; }
   .chart-tool.pan { background: #00a7df; font-size: 20px; }
+  .chart-terminal-head { position: relative; z-index: 20; }
+  .chart-period-menu {
+    display: none;
+    position: absolute;
+    top: 79px;
+    left: 3px;
+    right: 3px;
+    z-index: 40;
+    grid-template-columns: repeat(4,minmax(0,1fr));
+    gap: 2px;
+    padding: 4px;
+    background: #323232;
+    border: 1px solid #5e5e5e;
+    box-shadow: 0 5px 14px rgba(0,0,0,.75);
+  }
+  .chart-period-menu.open { display: grid; }
+  .chart-period-option {
+    height: 38px;
+    border: 0;
+    border-radius: 2px;
+    background: #181818;
+    color: #f3f3f3;
+    font-family: var(--font);
+    font-size: 16px;
+  }
+  .chart-period-option.active { background: #dadada; color: #111; }
   .chart-lookup-row {
-    height: 54px;
+    height: 58px;
     padding: 2px 3px;
-    grid-template-columns: 44px repeat(4,minmax(44px,1fr)) minmax(50px,1fr) 30px;
+    grid-template-columns: 44px repeat(4,minmax(48px,1fr)) minmax(50px,1fr) 32px;
     gap: 1px;
     align-items: stretch;
     background: #050505;
@@ -924,14 +950,14 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     font-family: Arial, var(--font);
     line-height: 1.05;
   }
-  .chart-lookup-cell span { color: #f5f5f5; font-size: 11px; }
+  .chart-lookup-cell span { color: #f5f5f5; font-size: 14px; }
   .chart-lookup-cell b {
     width: 100%;
     margin-top: 3px;
     overflow: hidden;
     color: #f4f4f4;
     font-family: var(--mono);
-    font-size: 10px;
+    font-size: clamp(11px,3.2vw,14px);
     font-weight: 600;
     text-align: center;
     text-overflow: clip;
@@ -945,14 +971,14 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .chart-lookup-cell.close b { color: var(--dn2); }
   .chart-lookup-close {
     align-self: center;
-    width: 27px;
-    height: 27px;
+    width: 32px;
+    height: 32px;
     border: 0;
     border-radius: 50%;
     background: #333;
     color: #ddd;
-    font-size: 18px;
-    line-height: 27px;
+    font-size: 22px;
+    line-height: 32px;
   }
   .chart-tabs {
     display: none;
@@ -984,19 +1010,14 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   }
   .chart-tab.active { background: #313131; color: #fff; }
   .chart-container { background: #000; }
-  .kinfo-float {
-    top: 3px; left: 4px;
-    max-width: calc(100% - 8px);
-    padding: 3px 5px;
-    background: rgba(0,0,0,.78);
-    border: 0;
-    border-radius: 0;
-    box-shadow: none;
-    font-size: 9px;
-  }
+  .kinfo-float { display: none !important; }
   .chart-study-strip {
     display: flex;
-    flex-shrink: 0;
+    position: absolute;
+    z-index: 12;
+    top: calc(75% - 54px);
+    left: 0;
+    right: 0;
     min-height: 27px;
     align-items: center;
     gap: 6px;
@@ -1025,13 +1046,16 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
 
   .chart-volume-panel {
     display: flex;
-    flex-direction: column;
-    flex: 0 0 118px;
-    min-height: 118px;
+    position: absolute;
+    z-index: 12;
+    top: calc(75% - 27px);
+    left: 0;
+    right: 0;
+    height: 27px;
     background: #000;
-    border-bottom: 1px solid #333;
   }
   .chart-volume-head {
+    width: 100%;
     height: 25px;
     display: flex;
     align-items: center;
@@ -1042,7 +1066,6 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     font-size: 11px;
     white-space: nowrap;
   }
-  .volume-panel-canvas { width: 100%; height: 93px; display: block; }
 }
 
 </style>
@@ -1328,11 +1351,20 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
             <button class="chart-menu" id="chartMenuBtn" type="button" aria-label="圖表選項">☰</button>
           </div>
           <div class="chart-tool-row">
-            <button class="chart-tool period" id="chartPeriodDisplay" type="button">5分&nbsp;›</button>
+            <button class="chart-tool period" id="chartPeriodDisplay" type="button" aria-expanded="false" aria-controls="chartPeriodMenu">5分&nbsp;›</button>
             <button class="chart-tool underlying" id="chartUnderlyingToggle" type="button">台指期</button>
             <button class="chart-tool" id="chartLookupBtn" type="button">＋查價</button>
             <button class="chart-tool" type="button" aria-label="圖表設定">⚙</button>
             <button class="chart-tool pan" type="button" aria-label="平移圖表">✥</button>
+          </div>
+          <div class="chart-period-menu" id="chartPeriodMenu" aria-label="K 線週期選擇">
+            <button class="chart-period-option" type="button" data-period="1">1分</button>
+            <button class="chart-period-option" type="button" data-period="3">3分</button>
+            <button class="chart-period-option" type="button" data-period="5">5分</button>
+            <button class="chart-period-option" type="button" data-period="10">10分</button>
+            <button class="chart-period-option" type="button" data-period="15">15分</button>
+            <button class="chart-period-option" type="button" data-period="30">30分</button>
+            <button class="chart-period-option" type="button" data-period="60">60分</button>
           </div>
           <div class="chart-lookup-row" id="chartLookupRow" aria-label="K 線查價資訊">
             <div class="chart-lookup-cell time"><span>時</span><b id="lookupTime">--:--</b></div>
@@ -1361,20 +1393,19 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
             <div id="chartTA" style="width:100%;height:100%;position:absolute;inset:0"></div>
             <div id="chartTrend" style="width:100%;height:100%;position:absolute;inset:0;visibility:hidden"></div>
             <div id="kinfo" class="kinfo-float"></div>
-          </div>
-          <div class="chart-study-strip" aria-label="均線資訊">
-            <span class="study-label">MA&nbsp;›</span>
-            <span class="study-ma5" id="studyMa5">5T:—</span>
-            <span class="study-ma10" id="studyMa10">10T:—</span>
-            <span class="study-ma20" id="studyMa20">20T:—</span>
-          </div>
-          <div class="chart-volume-panel" aria-label="成交量圖">
+            <div class="chart-study-strip" aria-label="均線資訊">
+              <span class="study-label">MA&nbsp;›</span>
+              <span class="study-ma5" id="studyMa5">5T:—</span>
+              <span class="study-ma10" id="studyMa10">10T:—</span>
+              <span class="study-ma20" id="studyMa20">20T:—</span>
+            </div>
+            <div class="chart-volume-panel" aria-label="成交量資訊">
             <div class="chart-volume-head">
               <span class="study-label">VOL&nbsp;›</span>
               <span class="study-ma5" id="studyVolLast">5T:—</span>
               <span class="study-ma10" id="studyVolAvg">10T:—</span>
             </div>
-            <canvas class="volume-panel-canvas" id="volumePanelCanvas"></canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -1840,7 +1871,6 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
           setTimeout(()=>{
             try{if(_lwcChart) _lwcChart.timeScale().fitContent();}catch(_){}
             try{chartTrend.resize();}catch(_){}
-            try{drawVolumePanel();}catch(_){}
           },60);
         }
       } else {
@@ -1861,6 +1891,7 @@ let activeChartTab='ta';
 // ── LWC K線圖 state ──
 let _lwcChart=null, _lwcCandleSeries=null, _lwcVolumeSeries=null;
 let _lwcMaSeries={}; // {period: series}
+let _lwcVolumeMaSeries={};
 let _lwcPriceLine_high=null, _lwcPriceLine_high2=null;
 let _lwcPriceLine_low=null, _lwcPriceLine_low2=null;
 let _lwcPriceLine_open=null; // 開盤線
@@ -1962,18 +1993,19 @@ function _lwcBindCrosshair(){
   if(!_lwcChart) return;
   _lwcChart.subscribeCrosshairMove(param=>{
     if(chartLookupActive&&param.time!=null) updateChartLookup(param.time);
-    if(!_kinfoUserHover) return;
     const isUnderlying=_kinfoMode!=='txo';
     const arr=isUnderlying?_txKinfoKdata:_kinfoKdata;
-    const vols=isUnderlying?null:_kinfoVolumes;
-    if(!param.time||!arr.length){updateKinfoLast();return;}
+    const vols=isUnderlying?_txKinfoVolumes:_kinfoVolumes;
+    if(!param.time||!arr.length){updateStudyAt();if(_kinfoUserHover)updateKinfoLast();return;}
     // find index by time
     const times=isUnderlying?_txKinfoTimes:_kinfoTimes;
     let idx=-1;
     if(times) idx=times.findIndex(t=>t===param.time);
-    if(idx<0){updateKinfoLast();return;}
+    if(idx<0){updateStudyAt();if(_kinfoUserHover)updateKinfoLast();return;}
+    updateStudyAt(idx);
+    if(!_kinfoUserHover) return;
     const k=arr[idx]; if(!k){updateKinfoLast();return;}
-    const vol=vols?vols[idx]:'';
+    const vol=vols?.[idx]??'';
     const cc=k[1]>=k[0]?'#ff1744':'#00e676';
     // 台灣時間 HH:MM
     const d=new Date(param.time*1000);
@@ -2016,6 +2048,8 @@ function syncTerminalChrome(){
     else chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
   }
   if(periodDisplay) periodDisplay.innerHTML=`${periodSelect.value||5}分&nbsp;›`;
+  document.querySelectorAll('.chart-period-option').forEach(button=>
+    button.classList.toggle('active',button.dataset.period===periodSelect.value));
   if(chainTxPrice) chainTxPrice.textContent=txPrice2?.textContent||'—';
   if(chainTxChange){
     const rawChange=txChg2?.textContent||'—';
@@ -2060,8 +2094,20 @@ document.getElementById('chartBack')?.addEventListener('click',()=>document.quer
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
 document.getElementById('chartMenuBtn')?.addEventListener('click',()=>document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open'));
-document.getElementById('chartLookupBtn')?.addEventListener('click',()=>setChartLookup(true));
+document.getElementById('chartLookupBtn')?.addEventListener('click',()=>{setChartPeriodMenu(false);setChartLookup(true);});
 document.getElementById('chartLookupClose')?.addEventListener('click',()=>setChartLookup(false));
+const chartPeriodMenu=document.getElementById('chartPeriodMenu');
+const chartPeriodDisplay=document.getElementById('chartPeriodDisplay');
+function setChartPeriodMenu(open){
+  chartPeriodMenu?.classList.toggle('open',!!open);
+  chartPeriodDisplay?.setAttribute('aria-expanded',open?'true':'false');
+}
+chartPeriodDisplay?.addEventListener('click',()=>setChartPeriodMenu(!chartPeriodMenu?.classList.contains('open')));
+chartPeriodMenu?.querySelectorAll('.chart-period-option').forEach(button=>button.addEventListener('click',()=>{
+  periodSelect.value=button.dataset.period;
+  periodSelect.dispatchEvent(new Event('change',{bubbles:true}));
+  setChartPeriodMenu(false);
+}));
 document.getElementById('underlyingTx')?.addEventListener('click',()=>setUnderlyingMode('tx'));
 document.getElementById('underlyingTaiex')?.addEventListener('click',()=>setUnderlyingMode('taiex'));
 document.getElementById('chartUnderlyingToggle')?.addEventListener('click',()=>setUnderlyingMode(underlyingMode==='tx'?'taiex':'tx',{showChart:true}));
@@ -2069,64 +2115,44 @@ expirySelect.addEventListener('change',syncTerminalChrome);
 periodSelect.addEventListener('change',syncTerminalChrome);
 new MutationObserver(syncTerminalChrome).observe(document.getElementById('chartName'),{childList:true,subtree:true,characterData:true});
 
-function updateStudyStrip(kdata, periods){
-  const closes=kdata.map(k=>k[1]);
-  const update=(id,period)=>{
+let _studyKdata=[], _studyVolumes=[], _studyPeriods=[5,10,20];
+function averageAt(values,period,index){
+  if(index<period-1) return null;
+  let sum=0;
+  for(let i=index-period+1;i<=index;i++) sum+=Number(values[i])||0;
+  return sum/period;
+}
+
+function updateStudyAt(index=null){
+  const lastIndex=_studyKdata.length-1;
+  const idx=index==null?lastIndex:Math.max(0,Math.min(index,lastIndex));
+  const closes=_studyKdata.map(k=>k[1]);
+  const periods=[
+    _studyPeriods.includes(5)?5:_studyPeriods[0]||5,
+    _studyPeriods.includes(10)?10:_studyPeriods[1]||10,
+    _studyPeriods.includes(20)?20:_studyPeriods[2]||20
+  ];
+  ['studyMa5','studyMa10','studyMa20'].forEach((id,i)=>{
     const el=document.getElementById(id); if(!el) return;
-    if(closes.length<period){el.textContent=`${period}T:—`;return;}
-    const value=closes.slice(-period).reduce((sum,n)=>sum+n,0)/period;
-    const previous=closes.length>period?closes.slice(-period-1,-1).reduce((sum,n)=>sum+n,0)/period:value;
-    el.textContent=`${period}T:${Number(value.toFixed(2))}${value>=previous?'↑':'↓'}`;
-  };
-  update('studyMa5',periods.includes(5)?5:periods[0]||5);
-  update('studyMa10',periods.includes(10)?10:periods[1]||10);
-  update('studyMa20',periods.includes(20)?20:periods[2]||20);
-}
-
-let _volumePanelKdata=[], _volumePanelVolumes=[];
-function updateVolumePanel(kdata,volumes){
-  _volumePanelKdata=kdata||[];
-  _volumePanelVolumes=volumes||[];
-  const last=_volumePanelVolumes.at(-1);
-  const avg10=_volumePanelVolumes.length?Math.round(_volumePanelVolumes.slice(-10).reduce((sum,n)=>sum+n,0)/Math.min(10,_volumePanelVolumes.length)):null;
-  const lastEl=document.getElementById('studyVolLast'); if(lastEl) lastEl.textContent=`5T:${last??'—'}`;
-  const avgEl=document.getElementById('studyVolAvg'); if(avgEl) avgEl.textContent=`10T:${avg10??'—'}`;
-  requestAnimationFrame(drawVolumePanel);
-}
-
-function drawVolumePanel(){
-  const canvas=document.getElementById('volumePanelCanvas');
-  if(!canvas||!canvas.clientWidth||!canvas.clientHeight) return;
-  const ratio=Math.min(window.devicePixelRatio||1,2);
-  const width=canvas.clientWidth, height=canvas.clientHeight;
-  canvas.width=Math.round(width*ratio); canvas.height=Math.round(height*ratio);
-  const ctx=canvas.getContext('2d'); ctx.setTransform(ratio,0,0,ratio,0,0);
-  ctx.clearRect(0,0,width,height);
-  ctx.strokeStyle='#202020'; ctx.lineWidth=1;
-  [0.25,0.5,0.75].forEach(p=>{const y=Math.round(height*p)+.5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(width,y);ctx.stroke();});
-  if(!_volumePanelVolumes.length) return;
-  const count=Math.min(_volumePanelVolumes.length,Math.max(24,Math.floor(width/5)));
-  const vols=_volumePanelVolumes.slice(-count), candles=_volumePanelKdata.slice(-count);
-  const max=Math.max(...vols,1), step=width/count, barW=Math.max(2,step*.68);
-  vols.forEach((vol,i)=>{
-    const h=Math.max(1,(vol/max)*(height-5));
-    const candle=candles[i];
-    ctx.fillStyle=candle&&candle[1]>=candle[0]?'#ff172d':'#00e83f';
-    ctx.fillRect(i*step+(step-barW)/2,height-h,barW,h);
+    const period=periods[i], value=averageAt(closes,period,idx);
+    if(value==null){el.textContent=`${period}T:—`;return;}
+    const previous=averageAt(closes,period,idx-1);
+    const arrow=previous==null||value===previous?'':value>previous?'↑':'↓';
+    el.textContent=`${period}T:${Number(value.toFixed(2))}${arrow}`;
   });
-  const drawMA=(period,color)=>{
-    ctx.strokeStyle=color; ctx.lineWidth=1; ctx.beginPath(); let started=false;
-    vols.forEach((_,i)=>{
-      if(i<period-1) return;
-      const avg=vols.slice(i-period+1,i+1).reduce((sum,n)=>sum+n,0)/period;
-      const x=i*step+step/2, y=height-(avg/max)*(height-5);
-      if(!started){ctx.moveTo(x,y);started=true;}else ctx.lineTo(x,y);
-    });
-    if(started) ctx.stroke();
-  };
-  drawMA(5,'#f1e729'); drawMA(10,'#35cee9');
+  [['studyVolLast',5],['studyVolAvg',10]].forEach(([id,period])=>{
+    const el=document.getElementById(id); if(!el) return;
+    const value=averageAt(_studyVolumes,period,idx);
+    el.textContent=`${period}T:${value==null?'—':formatLookupVolume(value)}`;
+  });
 }
-window.addEventListener('resize',()=>requestAnimationFrame(drawVolumePanel));
+
+function updateStudyStrip(kdata,periods,volumes=[]){
+  _studyKdata=kdata||[];
+  _studyVolumes=volumes||[];
+  _studyPeriods=periods||[5,10,20];
+  updateStudyAt();
+}
 
 // Chart tabs
 const tabTA=document.getElementById('tabTA'), tabTrend=document.getElementById('tabTrend');
@@ -3187,7 +3213,7 @@ document.getElementById('chartStrikeDown').addEventListener('click',()=>{
 // ── LWC 初始化/重建 helper ──
 function _lwcInit(){
   const container=document.getElementById('chartTA');
-  if(_lwcChart){ try{_lwcChart.remove();}catch(_){} _lwcChart=null; _lwcCandleSeries=null; _lwcVolumeSeries=null; _lwcMaSeries={}; }
+  if(_lwcChart){ try{_lwcChart.remove();}catch(_){} _lwcChart=null; _lwcCandleSeries=null; _lwcVolumeSeries=null; _lwcMaSeries={}; _lwcVolumeMaSeries={}; }
 
   // 台灣時間格式化（UTC+8）
   const fmtTW=(unix)=>{
@@ -3200,7 +3226,13 @@ function _lwcInit(){
 
   _lwcChart=LightweightCharts.createChart(container,{
     autoSize:true,
-    layout:{background:{type:'solid',color:'transparent'},textColor:'rgba(185,188,196,0.88)',fontFamily:"Arial,'Noto Sans TC',sans-serif",fontSize:11},
+    layout:{
+      background:{type:'solid',color:'transparent'},
+      textColor:'rgba(185,188,196,0.88)',
+      fontFamily:"Arial,'Noto Sans TC',sans-serif",
+      fontSize:11,
+      panes:{separatorColor:'#333',separatorHoverColor:'#555',enableResize:false}
+    },
     grid:{vertLines:{color:'rgba(255,255,255,0.04)'},horzLines:{color:'rgba(255,255,255,0.04)'}},
     crosshair:{mode:0,vertLine:{color:'rgba(255,255,255,0.2)',width:1,style:0},horzLine:{color:'rgba(255,255,255,0.2)',width:1,style:0}},
     rightPriceScale:{borderColor:'rgba(255,255,255,0.06)',textColor:'rgba(138,150,176,0.7)'},
@@ -3235,12 +3267,17 @@ function _lwcInit(){
     priceScaleId:'right',
   });
   _lwcVolumeSeries=_lwcChart.addSeries(LightweightCharts.HistogramSeries,{
-    color:'rgba(96,165,250,0.25)',
+    color:'rgba(96,165,250,0.65)',
     priceFormat:{type:'volume'},
-    priceScaleId:'vol',
-    visible:false,
-  });
-  _lwcChart.priceScale('vol').applyOptions({scaleMargins:{top:0.8,bottom:0}});
+    priceScaleId:'right',
+    visible:true,
+  },1);
+  try{
+    _lwcChart.priceScale('right',1).applyOptions({scaleMargins:{top:.18,bottom:0},borderVisible:false});
+    const panes=_lwcChart.panes();
+    panes[0]?.setStretchFactor(3);
+    panes[1]?.setStretchFactor(1);
+  }catch(_){}
   applyChartLookupCrosshairStyle();
 }
 
@@ -3281,6 +3318,22 @@ function _lwcSetMAs(times,kdata,maPeriods,maColorMap){
   });
 }
 
+function _lwcSetVolumeMAs(times,volumes){
+  Object.values(_lwcVolumeMaSeries).forEach(series=>{try{_lwcChart.removeSeries(series);}catch(_){}});
+  _lwcVolumeMaSeries={};
+  if(!_lwcChart) return;
+  [[5,'#f1e729'],[10,'#35cee9']].forEach(([period,color])=>{
+    const values=calcMA(period,volumes);
+    const data=times.map((time,index)=>values[index]!=null?{time,value:values[index]}:null).filter(Boolean);
+    const series=_lwcChart.addSeries(LightweightCharts.LineSeries,{
+      color,lineWidth:1,priceLineVisible:false,lastValueVisible:false,
+      crosshairMarkerVisible:false,priceScaleId:'right'
+    },1);
+    series.setData(data);
+    _lwcVolumeMaSeries[period]=series;
+  });
+}
+
 // ── renderTA (TXO K-line) via LWC v5 ──
 function renderTA(cutoff=null){
   const expiry=expirySelect.value, strike=strikeSelect.value, type=typeSelect.value;
@@ -3318,13 +3371,13 @@ function renderTA(cutoff=null){
 
   _lwcCandleSeries.setData(candleData);
   _lwcVolumeSeries.setData(volumeData);
-  updateVolumePanel(kdata,volumes);
+  _lwcSetVolumeMAs(times,volumes);
 
   // MA lines
   const maPeriods=getMAPeriods();
   const maColorMap=getMAColorMap();
   _lwcSetMAs(times,kdata,maPeriods,maColorMap);
-  updateStudyStrip(kdata,maPeriods);
+  updateStudyStrip(kdata,maPeriods,volumes);
 
   // 開盤價：最早一根K線的 open（日盤=08:45開盤，夜盤=15:00開盤，全部=最早）
   const openPrice=kdata.length>0?kdata[0][0]:null;
@@ -3392,13 +3445,13 @@ function renderTX(cutoff=null){
 
   _lwcCandleSeries.setData(candleData);
   _lwcVolumeSeries.setData(volumeData);
-  updateVolumePanel(kdata,volumes);
+  _lwcSetVolumeMAs(times,volumes);
 
   // MA lines
   const maPeriods=getMAPeriods();
   const maColorMap=getMAColorMap();
   _lwcSetMAs(times,kdata,maPeriods,maColorMap);
-  updateStudyStrip(kdata,maPeriods);
+  updateStudyStrip(kdata,maPeriods,volumes);
 
   // 開盤價：最早一根K線的 open
   const openPrice=kdata.length>0?kdata[0][0]:null;
@@ -3482,11 +3535,10 @@ function renderTAIEX(cutoff=null){
     time,value:volumes[i],
     color:kdata[i][1]>=kdata[i][0]?'rgba(255,23,68,0.25)':'rgba(0,230,118,0.25)'
   })));
-  updateVolumePanel(kdata,volumes);
-
+  _lwcSetVolumeMAs(times,volumes);
   const maPeriods=getMAPeriods();
   _lwcSetMAs(times,kdata,maPeriods,getMAColorMap());
-  updateStudyStrip(kdata,maPeriods);
+  updateStudyStrip(kdata,maPeriods,volumes);
   _lwcSetPriceLines(kdata,kdata[0][0]);
   if(needFullRedraw){
     _lwcChart.timeScale().fitContent();
