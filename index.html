@@ -1863,33 +1863,80 @@ td.price-01 > span { color: #fff !important; }
   const topbar=document.querySelector('.topbar');
   const bottomnav=document.querySelector('.bottomnav');
   const pageContent=document.getElementById('pageContent');
-  navItems.forEach(item=>{
-    item.addEventListener('click',()=>{
-      const target=item.dataset.page;
-      navItems.forEach(n=>n.classList.remove('active'));
-      item.classList.add('active');
-      pages.forEach(p=>p.classList.toggle('active',p.id===target));
-      pageContent.scrollTop=0;
-      pageContent.classList.toggle('chart-fullscreen',target==='pageChart');
-      bottomnav.style.display=target==='pageChart'?'none':'';
+  const validPages=new Set(Array.from(pages,page=>page.id));
+  let currentPage=document.querySelector('.page.active')?.id||'pageHome';
+  let currentState={txoApp:true,page:currentPage,fromPage:null};
 
-      // 行情報價與圖表頁使用自己的交易終端抬頭；其他頁恢復全域 topbar
-      if(target==='pageChart'||target==='pageChain'){
-        topbar.style.display='none';
-        if(target==='pageChart'){
-          document.querySelector('.chart-page-layout').style.height=
-            'calc(100dvh - var(--safe-bottom))';
-          setTimeout(()=>{
-            try{if(_lwcChart) _lwcChart.timeScale().fitContent();}catch(_){}
-            try{chartTrend.resize();}catch(_){}
-          },60);
-        }
-      } else {
-        topbar.style.display='';
-        const cpl=document.querySelector('.chart-page-layout');
-        if(cpl) cpl.style.height='calc(100dvh - var(--topbar-h) - var(--nav-h) - var(--safe-bottom))';
+  function closeTransientUi(){
+    let closed=false;
+    const periodMenu=document.getElementById('chartPeriodMenu');
+    if(periodMenu?.classList.contains('open')){ setChartPeriodMenu(false); closed=true; }
+    const mobileTabs=document.querySelector('#pageChart .chart-tabs.mobile-open');
+    if(mobileTabs){ mobileTabs.classList.remove('mobile-open'); closed=true; }
+    if(chartLookupActive){ setChartLookup(false); closed=true; }
+    return closed;
+  }
+
+  function renderAppPage(target){
+    navItems.forEach(n=>n.classList.toggle('active',n.dataset.page===target));
+    pages.forEach(p=>p.classList.toggle('active',p.id===target));
+    pageContent.scrollTop=0;
+    pageContent.classList.toggle('chart-fullscreen',target==='pageChart');
+    bottomnav.style.display=target==='pageChart'?'none':'';
+
+    // 行情報價與圖表頁使用自己的交易終端抬頭；其他頁恢復全域 topbar
+    if(target==='pageChart'||target==='pageChain'){
+      topbar.style.display='none';
+      if(target==='pageChart'){
+        document.querySelector('.chart-page-layout').style.height=
+          'calc(100dvh - var(--safe-bottom))';
+        setTimeout(()=>{
+          try{if(_lwcChart) _lwcChart.timeScale().fitContent();}catch(_){}
+          try{chartTrend.resize();}catch(_){}
+        },60);
       }
-    });
+    } else {
+      topbar.style.display='';
+      const cpl=document.querySelector('.chart-page-layout');
+      if(cpl) cpl.style.height='calc(100dvh - var(--topbar-h) - var(--nav-h) - var(--safe-bottom))';
+    }
+  }
+
+  function navigateAppPage(target,{replace=false}={}){
+    if(!validPages.has(target)) return;
+    closeTransientUi();
+    if(target===currentPage){ renderAppPage(target); return; }
+    const nextState={txoApp:true,page:target,fromPage:currentPage};
+    history[replace?'replaceState':'pushState'](nextState,'');
+    currentPage=target;
+    currentState=nextState;
+    renderAppPage(target);
+  }
+
+  function navigateAppBack(fallbackPage){
+    if(closeTransientUi()) return;
+    if(currentState.fromPage===fallbackPage){
+      history.back();
+    }else{
+      navigateAppPage(fallbackPage,{replace:true});
+    }
+  }
+
+  window.navigateAppPage=navigateAppPage;
+  window.navigateAppBack=navigateAppBack;
+  history.replaceState(currentState,'');
+
+  navItems.forEach(item=>item.addEventListener('click',()=>navigateAppPage(item.dataset.page)));
+  window.addEventListener('popstate',event=>{
+    if(closeTransientUi()){
+      history.pushState(currentState,'');
+      return;
+    }
+    const state=event.state;
+    if(!state?.txoApp||!validPages.has(state.page)) return;
+    currentPage=state.page;
+    currentState=state;
+    renderAppPage(currentPage);
   });
 }
 
@@ -2090,8 +2137,8 @@ function setUnderlyingMode(mode,{showChart=false}={}){
   syncTerminalChrome();
 }
 
-document.getElementById('chainBack')?.addEventListener('click',()=>document.querySelector('.nav-item[data-page="pageHome"]')?.click());
-document.getElementById('chartBack')?.addEventListener('click',()=>document.querySelector('.nav-item[data-page="pageChain"]')?.click());
+document.getElementById('chainBack')?.addEventListener('click',()=>window.navigateAppBack?.('pageHome'));
+document.getElementById('chartBack')?.addEventListener('click',()=>window.navigateAppBack?.('pageChain'));
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
 document.getElementById('chartMenuBtn')?.addEventListener('click',()=>document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open'));
