@@ -636,6 +636,7 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
 .terminal-head,
 .chart-terminal-head,
 .chart-tool-row,
+.chart-lookup-row,
 .chart-study-strip,
 .chart-volume-panel { display: none; }
 
@@ -902,6 +903,57 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .chart-tool.period { background: #dadada; color: #111; font-size: 16px; }
   .chart-tool.underlying { background: #245f73; color: #f2ff00; font-size: 13px; }
   .chart-tool.pan { background: #00a7df; font-size: 20px; }
+  .chart-lookup-row {
+    height: 54px;
+    padding: 2px 3px;
+    grid-template-columns: 44px repeat(4,minmax(44px,1fr)) minmax(50px,1fr) 30px;
+    gap: 1px;
+    align-items: stretch;
+    background: #050505;
+    border-bottom: 1px solid #343434;
+  }
+  .chart-page-layout.lookup-active .chart-tool-row { display: none; }
+  .chart-page-layout.lookup-active .chart-lookup-row { display: grid; }
+  .chart-page-layout.lookup-active .kinfo-float { display: none; }
+  .chart-lookup-cell {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, var(--font);
+    line-height: 1.05;
+  }
+  .chart-lookup-cell span { color: #f5f5f5; font-size: 11px; }
+  .chart-lookup-cell b {
+    width: 100%;
+    margin-top: 3px;
+    overflow: hidden;
+    color: #f4f4f4;
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    text-align: center;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  .chart-lookup-cell.time b,
+  .chart-lookup-cell.volume b { color: #f3ee26; }
+  .chart-lookup-cell.high b { color: var(--up2); }
+  .chart-lookup-cell.open b,
+  .chart-lookup-cell.low b,
+  .chart-lookup-cell.close b { color: var(--dn2); }
+  .chart-lookup-close {
+    align-self: center;
+    width: 27px;
+    height: 27px;
+    border: 0;
+    border-radius: 50%;
+    background: #333;
+    color: #ddd;
+    font-size: 18px;
+    line-height: 27px;
+  }
   .chart-tabs {
     display: none;
     height: 32px;
@@ -1278,9 +1330,18 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
           <div class="chart-tool-row">
             <button class="chart-tool period" id="chartPeriodDisplay" type="button">5分&nbsp;›</button>
             <button class="chart-tool underlying" id="chartUnderlyingToggle" type="button">台指期</button>
-            <button class="chart-tool" type="button">＋查價</button>
+            <button class="chart-tool" id="chartLookupBtn" type="button">＋查價</button>
             <button class="chart-tool" type="button" aria-label="圖表設定">⚙</button>
             <button class="chart-tool pan" type="button" aria-label="平移圖表">✥</button>
+          </div>
+          <div class="chart-lookup-row" id="chartLookupRow" aria-label="K 線查價資訊">
+            <div class="chart-lookup-cell time"><span>時</span><b id="lookupTime">--:--</b></div>
+            <div class="chart-lookup-cell open"><span>開</span><b id="lookupOpen">—</b></div>
+            <div class="chart-lookup-cell high"><span>高</span><b id="lookupHigh">—</b></div>
+            <div class="chart-lookup-cell low"><span>低</span><b id="lookupLow">—</b></div>
+            <div class="chart-lookup-cell close"><span>收</span><b id="lookupClose">—</b></div>
+            <div class="chart-lookup-cell volume"><span>量</span><b id="lookupVolume">—</b></div>
+            <button class="chart-lookup-close" id="chartLookupClose" type="button" aria-label="結束查價">×</button>
           </div>
         </div>
         <div class="chart-area" style="flex:1">
@@ -1806,6 +1867,69 @@ let _lwcPriceLine_open=null; // 開盤線
 
 let _kinfoUserHover=false;
 let _kinfoMode='txo'; // 'txo' | 'tx' | 'taiex'
+let chartLookupActive=false;
+
+function formatLookupVolume(value){
+  const n=Number(value);
+  if(!Number.isFinite(n)) return '—';
+  const abs=Math.abs(n);
+  if(abs>=1e9) return `${Number((n/1e9).toFixed(1))}B`;
+  if(abs>=1e6) return `${Number((n/1e6).toFixed(1))}M`;
+  if(abs>=1e3) return `${Number((n/1e3).toFixed(1))}K`;
+  return fmtNum(n,2);
+}
+
+function updateChartLookup(time=null){
+  if(!chartLookupActive) return;
+  const isUnderlying=_kinfoMode!=='txo';
+  const bars=isUnderlying?_txKinfoKdata:_kinfoKdata;
+  const times=isUnderlying?_txKinfoTimes:_kinfoTimes;
+  const volumes=isUnderlying?_txKinfoVolumes:_kinfoVolumes;
+  let index=bars.length-1;
+  if(time!=null){
+    const selected=times.findIndex(t=>t===time);
+    if(selected>=0) index=selected;
+  }
+  const bar=bars[index];
+  const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
+  if(!bar){
+    set('lookupTime','--:--');
+    ['lookupOpen','lookupHigh','lookupLow','lookupClose','lookupVolume'].forEach(id=>set(id,'—'));
+    return;
+  }
+  const unix=times[index];
+  const date=new Date(unix*1000);
+  const timeText=String(date.getHours()).padStart(2,'0')+':'+String(date.getMinutes()).padStart(2,'0');
+  set('lookupTime',timeText);
+  set('lookupOpen',bar[0]);
+  set('lookupHigh',bar[3]);
+  set('lookupLow',bar[2]);
+  set('lookupClose',bar[1]);
+  set('lookupVolume',volumes?.[index]!=null?formatLookupVolume(volumes[index]):'—');
+}
+
+function applyChartLookupCrosshairStyle(){
+  try{
+    const color=chartLookupActive?'#d9902f':'rgba(255,255,255,0.2)';
+    _lwcChart?.applyOptions({crosshair:{
+      vertLine:{color,labelBackgroundColor:chartLookupActive?'#d9902f':'#4a5470'},
+      horzLine:{color,labelBackgroundColor:chartLookupActive?'#d9902f':'#4a5470'}
+    }});
+  }catch(_){}
+}
+
+function setChartLookup(active){
+  chartLookupActive=!!active;
+  document.getElementById('chartPageLayout')?.classList.toggle('lookup-active',chartLookupActive);
+  if(chartLookupActive){
+    setChartTab('ta');
+    updateChartLookup();
+  }else{
+    try{_lwcChart?.clearCrosshairPosition();}catch(_){}
+    updateKinfoLast();
+  }
+  applyChartLookupCrosshairStyle();
+}
 
 // ── 用 DOM 事件可靠偵測游標是否在圖表上 ──
 {
@@ -1837,6 +1961,7 @@ function updateKinfoLast(){
 function _lwcBindCrosshair(){
   if(!_lwcChart) return;
   _lwcChart.subscribeCrosshairMove(param=>{
+    if(chartLookupActive&&param.time!=null) updateChartLookup(param.time);
     if(!_kinfoUserHover) return;
     const isUnderlying=_kinfoMode!=='txo';
     const arr=isUnderlying?_txKinfoKdata:_kinfoKdata;
@@ -1935,6 +2060,8 @@ document.getElementById('chartBack')?.addEventListener('click',()=>document.quer
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
 document.getElementById('chartMenuBtn')?.addEventListener('click',()=>document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open'));
+document.getElementById('chartLookupBtn')?.addEventListener('click',()=>setChartLookup(true));
+document.getElementById('chartLookupClose')?.addEventListener('click',()=>setChartLookup(false));
 document.getElementById('underlyingTx')?.addEventListener('click',()=>setUnderlyingMode('tx'));
 document.getElementById('underlyingTaiex')?.addEventListener('click',()=>setUnderlyingMode('taiex'));
 document.getElementById('chartUnderlyingToggle')?.addEventListener('click',()=>setUnderlyingMode(underlyingMode==='tx'?'taiex':'tx',{showChart:true}));
@@ -2004,6 +2131,7 @@ window.addEventListener('resize',()=>requestAnimationFrame(drawVolumePanel));
 // Chart tabs
 const tabTA=document.getElementById('tabTA'), tabTrend=document.getElementById('tabTrend');
 function setChartTab(tab){
+  if(tab==='trend'&&chartLookupActive) setChartLookup(false);
   activeChartTab=tab;
   tabTA.classList.toggle('active',tab==='ta');
   tabTrend.classList.toggle('active',tab==='trend');
@@ -2080,6 +2208,7 @@ let prevTTablePrices=new Map();
 let trendChartInited=false, trendChartKey='';
 let _txKinfoKdata=[], _txKinfoCutoff=null;
 let _txKinfoTimes=[]; // LWC unix timestamps for TX
+let _txKinfoVolumes=[];
 let taChartInited=false, taChartKey='';
 let _kinfoKdata=[], _kinfoVolumes=[], _kinfoCutoff=null;
 let _kinfoTimes=[]; // LWC unix timestamps for TXO
@@ -3113,6 +3242,7 @@ function _lwcInit(){
     visible:false,
   });
   _lwcChart.priceScale('vol').applyOptions({scaleMargins:{top:0.8,bottom:0}});
+  applyChartLookupCrosshairStyle();
 }
 
 function _lwcSetPriceLines(kdata, openPrice){
@@ -3212,6 +3342,7 @@ function renderTA(cutoff=null){
   // 更新模組層級快照
   _kinfoKdata=kdata; _kinfoVolumes=volumes; _kinfoCutoff=cutoff; _kinfoTimes=times;
   _kinfoMode='txo';
+  updateChartLookup();
   if(!_kinfoUserHover) updateKinfoLast();
   taChartInited=true;
 }
@@ -3283,8 +3414,9 @@ function renderTX(cutoff=null){
   }
 
   // Crosshair / kinfo snapshot
-  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff; _txKinfoTimes=times;
+  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff; _txKinfoTimes=times; _txKinfoVolumes=volumes;
   _kinfoMode='tx';
+  updateChartLookup();
   if(!_kinfoUserHover) updateKinfoLast();
   taChartInited=true;
 }
@@ -3362,8 +3494,9 @@ function renderTAIEX(cutoff=null){
     requestAnimationFrame(()=>{try{_lwcChart.timeScale().fitContent();}catch(_){}});
   }
 
-  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff; _txKinfoTimes=times;
+  _txKinfoKdata=kdata; _txKinfoCutoff=cutoff; _txKinfoTimes=times; _txKinfoVolumes=volumes;
   _kinfoMode='taiex';
+  updateChartLookup();
   if(!_kinfoUserHover) updateKinfoLast();
   taChartInited=true;
   syncTerminalChrome();
