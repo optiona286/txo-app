@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v17-quote-and-form-alignment';
+const CACHE_NAME = 'txo-v18-android-back-navigation';
 const APP_SHELL = [
   './',
   './index.html',
