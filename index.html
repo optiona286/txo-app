@@ -1865,16 +1865,13 @@ td.price-01 > span { color: #fff !important; }
   const pageContent=document.getElementById('pageContent');
   const validPages=new Set(Array.from(pages,page=>page.id));
   let currentPage=document.querySelector('.page.active')?.id||'pageHome';
-  let currentState={txoApp:true,page:currentPage,fromPage:null};
+  let currentState={txoApp:true,page:currentPage,fromPage:null,layer:null};
 
-  function closeTransientUi(){
-    let closed=false;
-    const periodMenu=document.getElementById('chartPeriodMenu');
-    if(periodMenu?.classList.contains('open')){ setChartPeriodMenu(false); closed=true; }
-    const mobileTabs=document.querySelector('#pageChart .chart-tabs.mobile-open');
-    if(mobileTabs){ mobileTabs.classList.remove('mobile-open'); closed=true; }
-    if(chartLookupActive){ setChartLookup(false); closed=true; }
-    return closed;
+  function applyAppLayer(layer){
+    setChartPeriodMenu(layer==='periodMenu');
+    document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open',layer==='chartMenu');
+    if(chartLookupActive!==(layer==='lookup')) setChartLookup(layer==='lookup');
+    window.applyOpDashLayer?.(layer==='opDash');
   }
 
   function renderAppPage(target){
@@ -1904,17 +1901,41 @@ td.price-01 > span { color: #fff !important; }
 
   function navigateAppPage(target,{replace=false}={}){
     if(!validPages.has(target)) return;
-    closeTransientUi();
-    if(target===currentPage){ renderAppPage(target); return; }
-    const nextState={txoApp:true,page:target,fromPage:currentPage};
-    history[replace?'replaceState':'pushState'](nextState,'');
+    const hadLayer=!!currentState.layer;
+    if(target===currentPage){
+      if(hadLayer) history.back();
+      else renderAppPage(target);
+      return;
+    }
+    const nextState={txoApp:true,page:target,fromPage:currentPage,layer:null};
+    history[replace||hadLayer?'replaceState':'pushState'](nextState,'');
     currentPage=target;
     currentState=nextState;
+    applyAppLayer(null);
     renderAppPage(target);
   }
 
+  function openAppLayer(layer){
+    if(!layer||currentState.layer===layer) return;
+    if(currentState.layer){
+      const nextState={...currentState,layer};
+      history.replaceState(nextState,'');
+      currentState=nextState;
+      applyAppLayer(layer);
+      return;
+    }
+    const nextState={...currentState,layer};
+    history.pushState(nextState,'');
+    currentState=nextState;
+    applyAppLayer(layer);
+  }
+
+  function closeAppLayer(layer){
+    if(currentState.layer===layer) history.back();
+  }
+
   function navigateAppBack(fallbackPage){
-    if(closeTransientUi()) return;
+    if(currentState.layer){ history.back(); return; }
     if(currentState.fromPage===fallbackPage){
       history.back();
     }else{
@@ -1924,19 +1945,18 @@ td.price-01 > span { color: #fff !important; }
 
   window.navigateAppPage=navigateAppPage;
   window.navigateAppBack=navigateAppBack;
+  window.openAppLayer=openAppLayer;
+  window.closeAppLayer=closeAppLayer;
   history.replaceState(currentState,'');
 
   navItems.forEach(item=>item.addEventListener('click',()=>navigateAppPage(item.dataset.page)));
   window.addEventListener('popstate',event=>{
-    if(closeTransientUi()){
-      history.pushState(currentState,'');
-      return;
-    }
     const state=event.state;
     if(!state?.txoApp||!validPages.has(state.page)) return;
     currentPage=state.page;
     currentState=state;
     renderAppPage(currentPage);
+    applyAppLayer(currentState.layer||null);
   });
 }
 
@@ -2141,20 +2161,27 @@ document.getElementById('chainBack')?.addEventListener('click',()=>window.naviga
 document.getElementById('chartBack')?.addEventListener('click',()=>window.navigateAppBack?.('pageChain'));
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
-document.getElementById('chartMenuBtn')?.addEventListener('click',()=>document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open'));
-document.getElementById('chartLookupBtn')?.addEventListener('click',()=>{setChartPeriodMenu(false);setChartLookup(true);});
-document.getElementById('chartLookupClose')?.addEventListener('click',()=>setChartLookup(false));
+document.getElementById('chartMenuBtn')?.addEventListener('click',()=>{
+  const open=document.querySelector('#pageChart .chart-tabs')?.classList.contains('mobile-open');
+  open?window.closeAppLayer?.('chartMenu'):window.openAppLayer?.('chartMenu');
+});
+document.getElementById('chartLookupBtn')?.addEventListener('click',()=>window.openAppLayer?.('lookup'));
+document.getElementById('chartLookupClose')?.addEventListener('click',()=>window.closeAppLayer?.('lookup'));
 const chartPeriodMenu=document.getElementById('chartPeriodMenu');
 const chartPeriodDisplay=document.getElementById('chartPeriodDisplay');
 function setChartPeriodMenu(open){
   chartPeriodMenu?.classList.toggle('open',!!open);
   chartPeriodDisplay?.setAttribute('aria-expanded',open?'true':'false');
 }
-chartPeriodDisplay?.addEventListener('click',()=>setChartPeriodMenu(!chartPeriodMenu?.classList.contains('open')));
+chartPeriodDisplay?.addEventListener('click',()=>{
+  chartPeriodMenu?.classList.contains('open')
+    ?window.closeAppLayer?.('periodMenu')
+    :window.openAppLayer?.('periodMenu');
+});
 chartPeriodMenu?.querySelectorAll('.chart-period-option').forEach(button=>button.addEventListener('click',()=>{
   periodSelect.value=button.dataset.period;
   periodSelect.dispatchEvent(new Event('change',{bubbles:true}));
-  setChartPeriodMenu(false);
+  window.closeAppLayer?.('periodMenu');
 }));
 document.getElementById('underlyingTx')?.addEventListener('click',()=>setUnderlyingMode('tx'));
 document.getElementById('underlyingTaiex')?.addEventListener('click',()=>setUnderlyingMode('taiex'));
@@ -2205,7 +2232,7 @@ function updateStudyStrip(kdata,periods,volumes=[]){
 // Chart tabs
 const tabTA=document.getElementById('tabTA'), tabTrend=document.getElementById('tabTrend');
 function setChartTab(tab){
-  if(tab==='trend'&&chartLookupActive) setChartLookup(false);
+  if(tab==='trend'&&chartLookupActive) window.closeAppLayer?.('lookup');
   activeChartTab=tab;
   tabTA.classList.toggle('active',tab==='ta');
   tabTrend.classList.toggle('active',tab==='trend');
@@ -3195,23 +3222,34 @@ tBody.addEventListener('contextmenu',(e)=>{
     }).join('');
   }
 
+  let _opDashCloseTimer=null;
+  function applyOpDashLayer(open){
+    clearTimeout(_opDashCloseTimer);
+    if(open){
+      overlay.style.display='block';
+      sheet.style.display='flex';
+      requestAnimationFrame(()=>{
+        sheet.style.transform='translateY(0)';
+        setTimeout(()=>renderOpDash(true),80);
+      });
+    }else{
+      sheet.style.transform='translateY(100%)';
+      _opDashCloseTimer=setTimeout(()=>{ overlay.style.display='none'; sheet.style.display='none'; },380);
+    }
+  }
+  window.applyOpDashLayer=applyOpDashLayer;
+
   window.openOpDash=function(strike,side){
     _opDashStrike=strike; _opDashSide=side;
     _gaugeCurrentPct=0; // 每次開啟重置指針起始位置
-    overlay.style.display='block';
-    sheet.style.display='flex';
-    requestAnimationFrame(()=>{
-      sheet.style.transform='translateY(0)';
-      setTimeout(()=>renderOpDash(true),80); // 第一次開啟用動畫
-    });
+    window.openAppLayer?.('opDash');
   };
 
   // 暴露給回測步進呼叫（不重置指針，有動畫過渡）
   window._renderOpDash=()=>renderOpDash(false);
 
   function closeOpDash(){
-    sheet.style.transform='translateY(100%)';
-    setTimeout(()=>{ overlay.style.display='none'; sheet.style.display='none'; },380);
+    window.closeAppLayer?.('opDash');
   }
 
   document.getElementById('opDashClose').addEventListener('click',closeOpDash);
