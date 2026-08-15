@@ -302,7 +302,7 @@ body {
 .field-select:focus, .field-input:focus { border-color: var(--accent); }
 .field-input { font-family: var(--mono); }
 .field-row { display: flex; gap: 10px; align-items: flex-end; }
-.field-row .field { flex: 1; }
+.field-row > .field { flex: 1; margin-bottom: 0; }
 
 /* ════════════════════════════════
    BUTTONS
@@ -608,7 +608,8 @@ body {
 .tag-n20p { background: rgba(248,113,113,.12); color: #fca5a5; padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; }
 
 /* ── Price cell ── */
-td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !important; font-weight: 900 !important; }
+td.price-01 { background: #00a000 !important; color: #fff !important; font-weight: 900 !important; }
+td.price-01 > span { color: #fff !important; }
 
 /* ════════════════════════════════
    MISC
@@ -725,13 +726,13 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
   .terminal-contract-row {
     height: 45px;
     display: grid;
-    grid-template-columns: 44px 1fr 48px 48px;
+    grid-template-columns: 44px 1fr;
     align-items: center;
+    padding-right: 44px;
     background: #07141c;
     border-bottom: 1px solid #263139;
   }
   .terminal-back,
-  .terminal-step,
   .chart-back,
   .chart-menu,
   .chart-contract-step {
@@ -749,13 +750,6 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     font-size: 20px;
     white-space: nowrap;
   }
-  .terminal-step {
-    margin: 3px 2px;
-    height: 39px;
-    background: #171d21;
-    font-size: 24px;
-  }
-  .terminal-step:active,
   .chart-contract-step:active { background: #364047; }
   .terminal-symbol {
     height: 32px;
@@ -1309,8 +1303,6 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
         <div class="terminal-contract-row">
           <button class="terminal-back" id="chainBack" type="button" aria-label="返回首頁">‹</button>
           <div class="terminal-expiry" id="chainExpiry">台指 —</div>
-          <button class="terminal-step" id="chainExpiryPrev" type="button" aria-label="上一個到期月份">▲</button>
-          <button class="terminal-step" id="chainExpiryNext" type="button" aria-label="下一個到期月份">▼</button>
         </div>
         <div class="terminal-symbol" aria-label="OP 對應標的切換">
           <button class="underlying-choice active" id="underlyingTx" type="button">台指期 TX</button>
@@ -2098,18 +2090,7 @@ function setUnderlyingMode(mode,{showChart=false}={}){
   syncTerminalChrome();
 }
 
-function moveExpiryFromTerminal(offset){
-  const options=Array.from(expirySelect.options);
-  const index=options.findIndex(option=>option.value===expirySelect.value);
-  const next=index+offset;
-  if(next<0||next>=options.length) return;
-  expirySelect.value=options[next].value;
-  expirySelect.dispatchEvent(new Event('change',{bubbles:true}));
-}
-
 document.getElementById('chainBack')?.addEventListener('click',()=>document.querySelector('.nav-item[data-page="pageHome"]')?.click());
-document.getElementById('chainExpiryPrev')?.addEventListener('click',()=>moveExpiryFromTerminal(-1));
-document.getElementById('chainExpiryNext')?.addEventListener('click',()=>moveExpiryFromTerminal(1));
 document.getElementById('chartBack')?.addEventListener('click',()=>document.querySelector('.nav-item[data-page="pageChain"]')?.click());
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());

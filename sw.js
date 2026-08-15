@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v16-wide-underlying-values';
+const CACHE_NAME = 'txo-v17-quote-and-form-alignment';
 const APP_SHELL = [
   './',
   './index.html',
