@@ -410,6 +410,7 @@ body {
   text-align: center; font-weight: 900; font-size: 15px; color: var(--text);
   background: rgba(255,255,255,0.02); cursor: pointer;
 }
+.ttable td.strike-cell.atm-strike { color: var(--gold); }
 .ttable td.strike-cell:active { background: var(--accent-dim); color: var(--accent2); }
 .ttable td.td-c, .ttable td.td-p { cursor: pointer; }
 .ttable td.td-c:active, .ttable td.td-p:active { background: var(--accent-dim) !important; }
@@ -605,7 +606,6 @@ body {
 .status-badge.closed { background: var(--dn-bg); color: var(--dn2); }
 .tag-n20c { background: rgba(96,165,250,.12); color: #93c5fd; padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; }
 .tag-n20p { background: rgba(248,113,113,.12); color: #fca5a5; padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 700; }
-.tag-atm  { background: var(--gold-bg); color: var(--gold2); padding: 1px 7px; border-radius: 99px; font-size: 10px; font-weight: 800; }
 
 /* ── Price cell ── */
 td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !important; font-weight: 900 !important; }
@@ -842,12 +842,12 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     border-left: 1px solid #226c83;
     border-right: 1px solid #226c83;
   }
+  .ttable td.strike-cell.atm-strike { color: #ffa313; }
   .ttable tr.sel td { box-shadow: inset 0 1px rgba(255,255,255,.22), inset 0 -1px rgba(255,255,255,.22); }
   .ttable tr.sel td:not(.strike-cell) { background: rgba(34,110,138,.16) !important; }
   .ttable td.n20c,
   .ttable td.n20p,
   .ttable tr.n20-row-both td { background: #000; }
-  .ttable .tag-atm,
   .ttable .tag-n20c,
   .ttable .tag-n20p { font-size: 8px; padding: 0 3px; border-radius: 2px; }
   .ttable .cell-sub {
@@ -2759,9 +2759,8 @@ function rebuildTTable(cutoff=null){
   }
 
   tBody.innerHTML=rows.map(r=>{
-    const rowCls=[r._atm?'n20-row-both':'',r._n20c&&r._n20p&&!r._atm?'n20-row-both':''].filter(Boolean).join(' ');
+    const rowCls=[r._n20c&&r._n20p?'n20-row-both':''].filter(Boolean).join(' ');
     const tags=[
-      r._atm?'<span class="tag-atm">ATM</span>':'',
       r._n20c?'<span class="tag-n20c">C≈20</span>':'',
       r._n20p?'<span class="tag-n20p">P≈20</span>':''
     ].filter(Boolean).join(' ');
@@ -2770,7 +2769,7 @@ function rebuildTTable(cutoff=null){
     return `<tr data-strike="${r.strike}" class="${rowCls}">
       <td class="td-cvol" data-side="C" data-strike="${r.strike}" title="成交量 ${numberOrDash(r.cVol)}">${chgHtml(r.cChg)||'<span style="color:var(--text3)">—</span>'}</td>
       <td class="td-c${r._n20c?' n20c':''}${c01}" data-side="C" data-strike="${r.strike}"><span class="${r.cChg>0?'red':r.cChg<0?'green':''}">${numberOrDash(r.cPrice)}</span></td>
-      <td class="strike-cell" data-strike="${r.strike}">${r.strike}${tags?'<br><span style="font-size:10px">'+tags+'</span>':''}</td>
+      <td class="strike-cell${r._atm?' atm-strike':''}" data-strike="${r.strike}">${r.strike}${tags?'<br><span style="font-size:10px">'+tags+'</span>':''}</td>
       <td class="td-p${r._n20p?' n20p':''}${p01}" data-side="P" data-strike="${r.strike}"><span class="${r.pChg>0?'red':r.pChg<0?'green':''}">${numberOrDash(r.pPrice)}</span></td>
       <td class="td-pvol" data-side="P" data-strike="${r.strike}" title="成交量 ${numberOrDash(r.pVol)}">${chgHtml(r.pChg)||'<span style="color:var(--text3)">—</span>'}</td>
     </tr>`;
