@@ -963,6 +963,25 @@ td.price-01 { background: rgba(38,208,124,0.18) !important; color: var(--dn2) !i
     text-overflow: clip;
     white-space: nowrap;
   }
+  .chart-lookup-row.wide-values .chart-lookup-cell b {
+    font-family: Arial, sans-serif;
+    font-size: clamp(10px,3vw,12px);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.2px;
+  }
+  .chart-lookup-row.wide-values {
+    height: 62px;
+    padding-left: 1px;
+    padding-right: 1px;
+    grid-template-columns: 38px repeat(4,minmax(0,1fr)) 44px 30px;
+    gap: 0;
+  }
+  .chart-lookup-row.wide-values .chart-lookup-cell {
+    border-right: 1px solid rgba(255,255,255,.06);
+  }
+  .chart-lookup-row.wide-values .chart-lookup-cell span {
+    font-size: 13px;
+  }
   .chart-lookup-cell.time b,
   .chart-lookup-cell.volume b { color: #f3ee26; }
   .chart-lookup-cell.high b { color: var(--up2); }
@@ -1913,6 +1932,7 @@ function formatLookupVolume(value){
 function updateChartLookup(time=null){
   if(!chartLookupActive) return;
   const isUnderlying=_kinfoMode!=='txo';
+  document.getElementById('chartLookupRow')?.classList.toggle('wide-values',isUnderlying);
   const bars=isUnderlying?_txKinfoKdata:_kinfoKdata;
   const times=isUnderlying?_txKinfoTimes:_kinfoTimes;
   const volumes=isUnderlying?_txKinfoVolumes:_kinfoVolumes;
