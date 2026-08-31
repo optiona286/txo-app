@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v20-dual-technical-charts';
+const CACHE_NAME = 'txo-v19-action-history-navigation';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,8 +10,7 @@ const APP_SHELL = [
 // CDN 資源（ECharts、JSZip）— 網路優先，失敗再用快取
 const CDN_URLS = [
   'https://cdn.jsdelivr.net/npm/echarts@5',
-  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
-  'https://cdn.jsdelivr.net/npm/lightweight-charts@5.1.0/dist/lightweight-charts.standalone.production.js'
+  'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'
 ];
 
 // ── 安裝：預快取 App Shell ──
