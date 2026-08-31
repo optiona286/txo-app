@@ -455,6 +455,23 @@ body {
 }
 .chart-tab.active { background: var(--accent); color: #fff; }
 .chart-container { flex: 1; position: relative; min-height: 0; overflow: hidden; }
+.dual-chart-stack {
+  position: absolute; inset: 0;
+  display: grid; grid-template-rows: minmax(0, 42fr) minmax(0, 58fr);
+  background: #000;
+}
+.dual-chart-pane { position: relative; min-height: 0; overflow: hidden; }
+.dual-chart-pane + .dual-chart-pane { border-top: 2px solid #4b5359; }
+.dual-chart-canvas { position: absolute; inset: 22px 0 0; }
+.dual-chart-label {
+  position: absolute; z-index: 13; top: 2px; left: 5px;
+  max-width: calc(100% - 56px); height: 18px; padding: 1px 7px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-radius: 3px; background: rgba(5,14,20,.88);
+  color: #d7dde2; font-family: var(--mono); font-size: 11px; font-weight: 800;
+  pointer-events: none;
+}
+.dual-chart-label strong { color: #f3ee26; font-weight: 800; }
 .kinfo-float {
   position: absolute; top: 6px; left: 6px; z-index: 10;
   display: flex; align-items: center; gap: 6px;
@@ -1023,12 +1040,16 @@ td.price-01 > span { color: #fff !important; }
   }
   .chart-tab.active { background: #313131; color: #fff; }
   .chart-container { background: #000; }
+  .dual-chart-stack { grid-template-rows: minmax(0, 42fr) minmax(0, 58fr); }
+  .dual-chart-canvas { inset: 21px 0 0; }
+  .dual-chart-label { top: 1px; height: 18px; font-size: 11px; }
   .kinfo-float { display: none !important; }
   .chart-study-strip {
     display: flex;
     position: absolute;
     z-index: 12;
-    top: calc(75% - 54px);
+    top: auto;
+    bottom: calc(14.5% + 27px);
     left: 0;
     right: 0;
     min-height: 27px;
@@ -1061,7 +1082,8 @@ td.price-01 > span { color: #fff !important; }
     display: flex;
     position: absolute;
     z-index: 12;
-    top: calc(75% - 27px);
+    top: auto;
+    bottom: 14.5%;
     left: 0;
     right: 0;
     height: 27px;
@@ -1401,7 +1423,16 @@ td.price-01 > span { color: #fff !important; }
             </div>
           </div>
           <div class="chart-container">
-            <div id="chartTA" style="width:100%;height:100%;position:absolute;inset:0"></div>
+            <div id="chartTA" class="dual-chart-stack">
+              <section class="dual-chart-pane" id="underlyingChartPane" aria-label="標的技術分析">
+                <div class="dual-chart-label" id="underlyingChartLabel"><strong>上圖</strong> 台指期</div>
+                <div class="dual-chart-canvas" id="chartUnderlying"></div>
+              </section>
+              <section class="dual-chart-pane" id="optionChartPane" aria-label="台指選技術分析">
+                <div class="dual-chart-label" id="optionChartLabel"><strong>下圖</strong> 台指選 —</div>
+                <div class="dual-chart-canvas" id="chartOption"></div>
+              </section>
+            </div>
             <div id="chartTrend" style="width:100%;height:100%;position:absolute;inset:0;visibility:hidden"></div>
             <div id="kinfo" class="kinfo-float"></div>
             <div class="chart-study-strip" aria-label="均線資訊">
@@ -1970,12 +2001,19 @@ let activeChartTab='ta';
 let _lwcChart=null, _lwcCandleSeries=null, _lwcVolumeSeries=null;
 let _lwcMaSeries={}; // {period: series}
 let _lwcVolumeMaSeries={};
+let _underlyingChart=null, _underlyingCandleSeries=null, _underlyingMaSeries={};
+let _underlyingChartKey='', _underlyingChartInited=false;
+let _dualSyncMainChart=null, _dualSyncUnderlyingChart=null;
+let _dualMainRangeHandler=null, _dualUnderlyingRangeHandler=null;
+let _dualMainCrosshairHandler=null, _dualUnderlyingCrosshairHandler=null;
+let _dualSyncingRange=false, _dualSyncingCrosshair=false;
 let _lwcPriceLine_high=null, _lwcPriceLine_high2=null;
 let _lwcPriceLine_low=null, _lwcPriceLine_low2=null;
 let _lwcPriceLine_open=null; // 開盤線
 
 let _kinfoUserHover=false;
 let _kinfoMode='txo'; // 'txo' | 'tx' | 'taiex'
+let _lookupPane='txo'; // 'txo' | 'tx' | 'taiex'
 let chartLookupActive=false;
 
 function formatLookupVolume(value){
@@ -1988,9 +2026,10 @@ function formatLookupVolume(value){
   return fmtNum(n,2);
 }
 
-function updateChartLookup(time=null){
+function updateChartLookup(time=null,sourceMode=_lookupPane){
   if(!chartLookupActive) return;
-  const isUnderlying=_kinfoMode!=='txo';
+  _lookupPane=sourceMode||'txo';
+  const isUnderlying=_lookupPane!=='txo';
   document.getElementById('chartLookupRow')?.classList.toggle('wide-values',isUnderlying);
   const bars=isUnderlying?_txKinfoKdata:_kinfoKdata;
   const times=isUnderlying?_txKinfoTimes:_kinfoTimes;
@@ -2025,6 +2064,10 @@ function applyChartLookupCrosshairStyle(){
       vertLine:{color,labelBackgroundColor:chartLookupActive?'#d9902f':'#4a5470'},
       horzLine:{color,labelBackgroundColor:chartLookupActive?'#d9902f':'#4a5470'}
     }});
+    _underlyingChart?.applyOptions({crosshair:{
+      vertLine:{color,labelBackgroundColor:chartLookupActive?'#d9902f':'#4a5470'},
+      horzLine:{color,labelBackgroundColor:chartLookupActive?'#d9902f':'#4a5470'}
+    }});
   }catch(_){}
 }
 
@@ -2033,9 +2076,10 @@ function setChartLookup(active){
   document.getElementById('chartPageLayout')?.classList.toggle('lookup-active',chartLookupActive);
   if(chartLookupActive){
     setChartTab('ta');
-    updateChartLookup();
+    updateChartLookup(null,_lookupPane);
   }else{
     try{_lwcChart?.clearCrosshairPosition();}catch(_){}
+    try{_underlyingChart?.clearCrosshairPosition();}catch(_){}
     updateKinfoLast();
   }
   applyChartLookupCrosshairStyle();
@@ -2043,12 +2087,13 @@ function setChartLookup(active){
 
 // ── 用 DOM 事件可靠偵測游標是否在圖表上 ──
 {
-  const chartContainer=document.getElementById('chartTA');
-  chartContainer.addEventListener('mouseenter',()=>{ _kinfoUserHover=true; });
-  chartContainer.addEventListener('mouseleave',()=>{ _kinfoUserHover=false; });
-  chartContainer.addEventListener('touchstart',()=>{ _kinfoUserHover=true; }, {passive:true});
-  chartContainer.addEventListener('touchend',  ()=>{ _kinfoUserHover=false; }, {passive:true});
-  chartContainer.addEventListener('touchcancel',()=>{ _kinfoUserHover=false; }, {passive:true});
+  document.querySelectorAll('#chartTA .dual-chart-canvas').forEach(chartContainer=>{
+    chartContainer.addEventListener('mouseenter',()=>{ _kinfoUserHover=true; });
+    chartContainer.addEventListener('mouseleave',()=>{ _kinfoUserHover=false; });
+    chartContainer.addEventListener('touchstart',()=>{ _kinfoUserHover=true; }, {passive:true});
+    chartContainer.addEventListener('touchend',()=>{ _kinfoUserHover=false; }, {passive:true});
+    chartContainer.addEventListener('touchcancel',()=>{ _kinfoUserHover=false; }, {passive:true});
+  });
 }
 
 // ── 集中管理 kinfo 更新，所有地方都呼叫這裡 ──
@@ -2071,7 +2116,8 @@ function updateKinfoLast(){
 function _lwcBindCrosshair(){
   if(!_lwcChart) return;
   _lwcChart.subscribeCrosshairMove(param=>{
-    if(chartLookupActive&&param.time!=null) updateChartLookup(param.time);
+    _lookupPane='txo';
+    if(chartLookupActive&&param.time!=null) updateChartLookup(param.time,'txo');
     const isUnderlying=_kinfoMode!=='txo';
     const arr=isUnderlying?_txKinfoKdata:_kinfoKdata;
     const vols=isUnderlying?_txKinfoVolumes:_kinfoVolumes;
@@ -2122,10 +2168,12 @@ function syncTerminalChrome(){
   if(chainExpiry) chainExpiry.textContent=`台指 ${expiry}`;
   if(chartHeaderName) chartHeaderName.textContent=chartNameNode?.textContent||'—';
   if(chartHeaderSub){
-    if(currentChartMode==='tx') chartHeaderSub.textContent='TX 台指期';
-    else if(currentChartMode==='taiex') chartHeaderSub.textContent='TAIEX 加權指數';
-    else chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
+    chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
   }
+  const upperLabel=document.getElementById('underlyingChartLabel');
+  const lowerLabel=document.getElementById('optionChartLabel');
+  if(upperLabel) upperLabel.innerHTML=`<strong>上圖</strong> ${underlyingMode==='tx'?'TX 台指期':'TAIEX 加權指數'}`;
+  if(lowerLabel) lowerLabel.innerHTML=`<strong>下圖</strong> ${strikeSelect.value?`${expiry} ${strikeSelect.value}${typeSelect.value||''}`:'台指選 —'}`;
   if(periodDisplay) periodDisplay.innerHTML=`${periodSelect.value||5}分&nbsp;›`;
   document.querySelectorAll('.chart-period-option').forEach(button=>
     button.classList.toggle('active',button.dataset.period===periodSelect.value));
@@ -2146,9 +2194,8 @@ function setUnderlyingMode(mode,{showChart=false}={}){
   if(chartToggle) chartToggle.textContent=mode==='tx'?'台指期':'加權';
   const hint=document.getElementById('underlyingChartHint');
   if(hint) hint.textContent=mode==='tx'?'點擊履約價 → 查看TX技術分析':'點擊履約價 → 查看加權技術分析';
-  if(showChart||currentChartMode==='tx'||currentChartMode==='taiex'){
-    currentChartMode=mode;
-    taChartInited=false; taChartKey='';
+  if(showChart||document.getElementById('pageChart')?.classList.contains('active')){
+    _underlyingChartInited=false; _underlyingChartKey='';
     renderChart(cutoffTime);
   }
   rebuildPlayTimes();
@@ -3276,10 +3323,174 @@ tBody.addEventListener('contextmenu',(e)=>{
 // ═══════════════════════════════════
 // CHARTS — Full renderTA, renderTX, renderTrend from original
 // ═══════════════════════════════════
+function _underlyingInit(){
+  const container=document.getElementById('chartUnderlying');
+  if(_underlyingChart){
+    _unbindDualChartSync();
+    try{_underlyingChart.remove();}catch(_){}
+    _underlyingChart=null; _underlyingCandleSeries=null; _underlyingMaSeries={};
+  }
+  _underlyingChart=LightweightCharts.createChart(container,{
+    autoSize:true,
+    layout:{
+      background:{type:'solid',color:'transparent'},
+      textColor:'rgba(185,188,196,0.88)',
+      fontFamily:"Arial,'Noto Sans TC',sans-serif",fontSize:11
+    },
+    grid:{vertLines:{color:'rgba(255,255,255,0.04)'},horzLines:{color:'rgba(255,255,255,0.04)'}},
+    crosshair:{mode:0,vertLine:{color:'rgba(255,255,255,0.2)',width:1,style:0},horzLine:{color:'rgba(255,255,255,0.2)',width:1,style:0}},
+    rightPriceScale:{borderColor:'rgba(255,255,255,0.06)',textColor:'rgba(138,150,176,0.7)'},
+    timeScale:{
+      borderColor:'rgba(255,255,255,0.06)',timeVisible:true,secondsVisible:false,
+      tickMarkFormatter:(time)=>{
+        const d=new Date(time*1000);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      }
+    },
+    localization:{timeFormatter:(unix)=>{
+      const d=new Date(unix*1000);
+      return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+    }},
+    handleScroll:true,handleScale:true
+  });
+  _underlyingCandleSeries=_underlyingChart.addSeries(LightweightCharts.CandlestickSeries,{
+    upColor:'#ff1744',downColor:'#00e676',borderUpColor:'#ff1744',borderDownColor:'#00e676',
+    wickUpColor:'#ff1744',wickDownColor:'#00e676',priceScaleId:'right'
+  });
+  applyChartLookupCrosshairStyle();
+}
+
+function _underlyingSetMAs(times,kdata){
+  Object.values(_underlyingMaSeries).forEach(series=>{try{_underlyingChart.removeSeries(series);}catch(_){}});
+  _underlyingMaSeries={};
+  const closes=kdata.map(bar=>bar[1]);
+  const colors=getMAColorMap();
+  getMAPeriods().forEach(period=>{
+    const values=calcMA(period,closes);
+    const series=_underlyingChart.addSeries(LightweightCharts.LineSeries,{
+      color:colors[period]||'#fff',lineWidth:1,priceLineVisible:false,lastValueVisible:false,
+      crosshairMarkerVisible:false,priceScaleId:'right'
+    });
+    series.setData(times.map((time,index)=>values[index]!=null?{time,value:values[index]}:null).filter(Boolean));
+    _underlyingMaSeries[period]=series;
+  });
+}
+
+function _buildUnderlyingBars(cutoff=null){
+  const period=parseInt(periodSelect.value)||5;
+  const cutMs=cutoff?+cutoff:Infinity;
+  if(underlyingMode==='taiex'){
+    const data=[];
+    for(const item of taiexDataIndex){
+      if(item.dtms>cutMs) break;
+      if(withinSession(item.time)) data.push(item);
+    }
+    return aggregateTaiexBars(data,period);
+  }
+  let data=[];
+  for(const item of txDataIndex){if(item.dtms>cutMs) break; if(withinSession(item.time)) data.push(item);}
+  if(data.length){
+    const byTime={};
+    data.forEach(item=>{if(!byTime[item.dtms]||item.volume>byTime[item.dtms].volume)byTime[item.dtms]=item;});
+    data=Object.values(byTime).sort((a,b)=>a.dtms-b.dtms);
+  }
+  const grouped={};
+  data.forEach(item=>{
+    const key=String(Math.floor(item.dtms/(60000*period))*(60000*period));
+    if(!grouped[key]) grouped[key]={open:item.price,high:item.price,low:item.price,close:item.price,volume:item.volume||0};
+    else{
+      const bar=grouped[key]; bar.high=Math.max(bar.high,item.price); bar.low=Math.min(bar.low,item.price);
+      bar.close=item.price; bar.volume+=(item.volume||0);
+    }
+  });
+  const keys=Object.keys(grouped).sort();
+  return{
+    times:keys.map(key=>Math.floor(+key/1000)),
+    kdata:keys.map(key=>{const bar=grouped[key];return[bar.open,bar.close,bar.low,bar.high];}),
+    volumes:keys.map(key=>grouped[key].volume)
+  };
+}
+
+function _unbindDualChartSync(){
+  try{_dualSyncMainChart?.timeScale().unsubscribeVisibleTimeRangeChange(_dualMainRangeHandler);}catch(_){}
+  try{_dualSyncUnderlyingChart?.timeScale().unsubscribeVisibleTimeRangeChange(_dualUnderlyingRangeHandler);}catch(_){}
+  try{_dualSyncMainChart?.unsubscribeCrosshairMove(_dualMainCrosshairHandler);}catch(_){}
+  try{_dualSyncUnderlyingChart?.unsubscribeCrosshairMove(_dualUnderlyingCrosshairHandler);}catch(_){}
+  _dualSyncMainChart=null; _dualSyncUnderlyingChart=null;
+}
+
+function _bindDualChartSync(){
+  if(!_lwcChart||!_underlyingChart) return;
+  if(_dualSyncMainChart===_lwcChart&&_dualSyncUnderlyingChart===_underlyingChart) return;
+  _unbindDualChartSync();
+  _dualSyncMainChart=_lwcChart; _dualSyncUnderlyingChart=_underlyingChart;
+  _dualMainRangeHandler=range=>{
+    if(!range||_dualSyncingRange) return;
+    _dualSyncingRange=true; try{_underlyingChart.timeScale().setVisibleRange(range);}catch(_){} _dualSyncingRange=false;
+  };
+  _dualUnderlyingRangeHandler=range=>{
+    if(!range||_dualSyncingRange) return;
+    _dualSyncingRange=true; try{_lwcChart.timeScale().setVisibleRange(range);}catch(_){} _dualSyncingRange=false;
+  };
+  _dualMainCrosshairHandler=param=>{
+    if(_dualSyncingCrosshair) return;
+    if(param.time==null){
+      _dualSyncingCrosshair=true; try{_underlyingChart.clearCrosshairPosition();}catch(_){} _dualSyncingCrosshair=false; return;
+    }
+    const index=_txKinfoTimes.indexOf(param.time); if(index<0) return;
+    _dualSyncingCrosshair=true;
+    try{_underlyingChart.setCrosshairPosition(_txKinfoKdata[index][1],param.time,_underlyingCandleSeries);}catch(_){}
+    _dualSyncingCrosshair=false;
+  };
+  _dualUnderlyingCrosshairHandler=param=>{
+    if(_dualSyncingCrosshair) return;
+    _lookupPane=underlyingMode;
+    if(chartLookupActive&&param.time!=null) updateChartLookup(param.time,underlyingMode);
+    if(param.time==null){
+      _dualSyncingCrosshair=true; try{_lwcChart.clearCrosshairPosition();}catch(_){} _dualSyncingCrosshair=false; return;
+    }
+    const index=_kinfoTimes.indexOf(param.time); if(index<0) return;
+    _dualSyncingCrosshair=true;
+    try{_lwcChart.setCrosshairPosition(_kinfoKdata[index][1],param.time,_lwcCandleSeries);}catch(_){}
+    _dualSyncingCrosshair=false;
+  };
+  _lwcChart.timeScale().subscribeVisibleTimeRangeChange(_dualMainRangeHandler);
+  _underlyingChart.timeScale().subscribeVisibleTimeRangeChange(_dualUnderlyingRangeHandler);
+  _lwcChart.subscribeCrosshairMove(_dualMainCrosshairHandler);
+  _underlyingChart.subscribeCrosshairMove(_dualUnderlyingCrosshairHandler);
+}
+
+function renderUnderlyingChart(cutoff=null){
+  const key=`${underlyingMode}|${expirySelect.value}|${sessionSelect.value}|${periodSelect.value}`;
+  const needFullRedraw=!_underlyingChartInited||key!==_underlyingChartKey;
+  if(needFullRedraw){_underlyingChartKey=key;_underlyingInit();}
+  const {times,kdata,volumes}=_buildUnderlyingBars(cutoff);
+  _txKinfoTimes=times; _txKinfoKdata=kdata; _txKinfoVolumes=volumes; _txKinfoCutoff=cutoff;
+  const label=document.getElementById('underlyingChartLabel');
+  if(label) label.innerHTML=`<strong>上圖</strong> ${underlyingMode==='tx'?'TX 台指期':'TAIEX 加權指數'}${kdata.length?'':' · 無資料'}`;
+  _underlyingCandleSeries.setData(times.map((time,index)=>({
+    time,open:kdata[index][0],close:kdata[index][1],low:kdata[index][2],high:kdata[index][3]
+  })));
+  _underlyingSetMAs(times,kdata);
+  if(needFullRedraw&&times.length) _underlyingChart.timeScale().fitContent();
+  _underlyingChartInited=true;
+  _bindDualChartSync();
+  if(needFullRedraw&&_lwcChart){
+    requestAnimationFrame(()=>{
+      try{
+        const range=_lwcChart.timeScale().getVisibleRange();
+        if(range)_underlyingChart.timeScale().setVisibleRange(range);
+      }catch(_){}
+    });
+  }
+}
+
 function renderChart(cutoff=null){
-  if(currentChartMode==='tx'){ renderTX(cutoff); renderTrend(cutoff); }
-  else if(currentChartMode==='taiex'){ renderTAIEX(cutoff); renderTrend(cutoff); }
-  else{ renderTA(cutoff); renderTrend(cutoff); }
+  currentChartMode='txo';
+  renderTA(cutoff);
+  renderUnderlyingChart(cutoff);
+  renderTrend(cutoff);
+  syncTerminalChrome();
 }
 
 // Chart strike navigation buttons
@@ -3298,8 +3509,8 @@ document.getElementById('chartStrikeDown').addEventListener('click',()=>{
 
 // ── LWC 初始化/重建 helper ──
 function _lwcInit(){
-  const container=document.getElementById('chartTA');
-  if(_lwcChart){ try{_lwcChart.remove();}catch(_){} _lwcChart=null; _lwcCandleSeries=null; _lwcVolumeSeries=null; _lwcMaSeries={}; _lwcVolumeMaSeries={}; }
+  const container=document.getElementById('chartOption');
+  if(_lwcChart){ _unbindDualChartSync(); try{_lwcChart.remove();}catch(_){} _lwcChart=null; _lwcCandleSeries=null; _lwcVolumeSeries=null; _lwcMaSeries={}; _lwcVolumeMaSeries={}; }
 
   // 台灣時間格式化（UTC+8）
   const fmtTW=(unix)=>{
@@ -3430,6 +3641,8 @@ function renderTA(cutoff=null){
   if(needFullRedraw){ taChartKey=newTAKey; taChartInited=false; }
   if(!expiry||!strike||!type){kinfo.innerText='請選擇檔案與條件'; chartName.textContent='—'; return;}
   chartName.textContent=`${expiry} ${strike}${type}`;
+  const optionLabel=document.getElementById('optionChartLabel');
+  if(optionLabel) optionLabel.innerHTML=`<strong>下圖</strong> ${expiry} ${strike}${type}`;
 
   const k=keyOf(expiry,strike,type);
   const indexArr=dataIndex.get(k)||[];
