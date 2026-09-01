@@ -303,6 +303,18 @@ body {
 .field-input { font-family: var(--mono); }
 .field-row { display: flex; gap: 10px; align-items: flex-end; }
 .field-row > .field { flex: 1; margin-bottom: 0; }
+.settlement-range-toggle {
+  width: 100%; min-height: 47px; padding: 10px 8px;
+  border: 1px solid var(--border2); border-radius: var(--r-md);
+  background: var(--surface2); color: var(--text2);
+  font-family: var(--font); font-size: 13px; font-weight: 800;
+  cursor: pointer; transition: background .15s,color .15s,border-color .15s;
+}
+.settlement-range-toggle.active {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+.settlement-range-note { margin-top: 7px; color: var(--text3); font-size: 11px; line-height: 1.45; }
 
 /* ════════════════════════════════
    BUTTONS
@@ -1241,7 +1253,32 @@ td.price-01 > span { color: #fff !important; }
                   <option value="60">60分</option>
                 </select>
               </div>
+              <div class="field">
+                <div class="field-label">結算日時段</div>
+                <button class="settlement-range-toggle" id="settlementRangeToggle" type="button" aria-pressed="false">關閉</button>
+              </div>
             </div>
+            <div class="field-row" id="settlementRangeRow" style="margin-top:14px;display:none">
+              <div class="field">
+                <div class="field-label">開始時間</div>
+                <select class="field-select" id="settlementRangeStart">
+                  <option value="084500">08:45</option>
+                  <option value="100000">10:00</option>
+                  <option value="110000">11:00</option>
+                  <option value="120000">12:00</option>
+                </select>
+              </div>
+              <div class="field">
+                <div class="field-label">結束時間</div>
+                <select class="field-select" id="settlementRangeEnd">
+                  <option value="100000">10:00</option>
+                  <option value="110000">11:00</option>
+                  <option value="120000">12:00</option>
+                  <option value="133000">13:30</option>
+                </select>
+              </div>
+            </div>
+            <div class="settlement-range-note" id="settlementRangeNote" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -2105,6 +2142,45 @@ const sessionSelect=document.getElementById('sessionSelect');
 const periodSelect=document.getElementById('periodSelect');
 const kinfo=document.getElementById('kinfo');
 const tBody=document.getElementById('tBody');
+const settlementRangeToggle=document.getElementById('settlementRangeToggle');
+const settlementRangeRow=document.getElementById('settlementRangeRow');
+const settlementRangeStart=document.getElementById('settlementRangeStart');
+const settlementRangeEnd=document.getElementById('settlementRangeEnd');
+const settlementRangeNote=document.getElementById('settlementRangeNote');
+
+function restoreSettlementRangeSettings(){
+  try{
+    const start=localStorage.getItem('txoSettlementRangeStart');
+    const end=localStorage.getItem('txoSettlementRangeEnd');
+    if(start&&Array.from(settlementRangeStart.options).some(option=>option.value===start)) settlementRangeStart.value=start;
+    if(end&&Array.from(settlementRangeEnd.options).some(option=>option.value===end)) settlementRangeEnd.value=end;
+  }catch(_){}
+}
+
+function normalizeSettlementRangeOptions(){
+  const start=settlementRangeStart.value;
+  Array.from(settlementRangeEnd.options).forEach(option=>{option.disabled=option.value<=start;});
+  if(settlementRangeEnd.value<=start){
+    const next=Array.from(settlementRangeEnd.options).find(option=>!option.disabled);
+    if(next) settlementRangeEnd.value=next.value;
+  }
+}
+
+function syncSettlementRangeUI(){
+  normalizeSettlementRangeOptions();
+  settlementRangeToggle.classList.toggle('active',settlementRangeEnabled);
+  settlementRangeToggle.setAttribute('aria-pressed',settlementRangeEnabled?'true':'false');
+  settlementRangeToggle.textContent=settlementRangeEnabled?'開啟':'關閉';
+  settlementRangeRow.style.display=settlementRangeEnabled?'flex':'none';
+  settlementRangeNote.style.display=settlementRangeEnabled?'block':'none';
+  if(settlementRangeEnabled){
+    const start=settlementRangeStart.selectedOptions[0]?.textContent||'08:45';
+    const end=settlementRangeEnd.selectedOptions[0]?.textContent||'13:30';
+    settlementRangeNote.textContent=isSelectedSettlementDay()
+      ?`目前為所選契約結算日，K 線與回測限制為 ${start}～${end}`
+      :`已設定 ${start}～${end}；目前不是所選契約結算日，因此維持完整時段`;
+  }
+}
 
 // Mobile terminal chrome mirrors the existing selectors and quote engine.
 // It deliberately delegates to the original controls so calculation/order logic stays unchanged.
@@ -2317,6 +2393,10 @@ let playTimes=[], playIndex=0, playTimer=null, playing=false;
 let cutoffTime=null, simTime=null;
 const lastTypeSelectionMap={};
 let dataIndex=new Map(), txDataIndex=[], taiexDataIndex=[];
+let settlementRangeEnabled=false;
+try{settlementRangeEnabled=localStorage.getItem('txoSettlementRangeEnabled')==='1';}catch(_){}
+restoreSettlementRangeSettings();
+syncSettlementRangeUI();
 
 // Auto order state
 let autoOrderActive=false, autoOrderPositions=[], autoOrderEnteredKeys=new Set();
@@ -2374,6 +2454,64 @@ function withinSession(tstr){
   if(sess==='一般') return t>='084500'&&t<='134500';
   if(sess==='盤後') return(t>='150000'||t<='050000');
   return true;
+}
+function normalizeTradingDate(value){
+  const digits=String(value||'').replace(/[^0-9]/g,'');
+  return digits.length>=8?digits.slice(0,8):'';
+}
+
+function nthWeekdayDate(year,month,weekday,nth){
+  const first=new Date(year,month-1,1,12,0,0);
+  const day=1+((weekday-first.getDay()+7)%7)+(nth-1)*7;
+  const date=new Date(year,month-1,day,12,0,0);
+  if(date.getMonth()!==month-1) return '';
+  const p=n=>String(n).padStart(2,'0');
+  return `${date.getFullYear()}${p(date.getMonth()+1)}${p(date.getDate())}`;
+}
+
+function scheduledSettlementDate(expiry){
+  const code=String(expiry||'').replace(/\s/g,'').toUpperCase();
+  if(/^\d{8}$/.test(code)) return code;
+  let match=code.match(/^(\d{4})(\d{2})([WF])(\d)$/);
+  if(match){
+    const weekday=match[3]==='F'?5:3;
+    return nthWeekdayDate(Number(match[1]),Number(match[2]),weekday,Number(match[4]));
+  }
+  match=code.match(/^(\d{4})(\d{2})$/);
+  if(match) return nthWeekdayDate(Number(match[1]),Number(match[2]),3,3);
+  return '';
+}
+
+function hasSettlementCutoffEvidence(dateKey,expiry){
+  if(!dateKey||!expiry) return false;
+  let nearClose=false,afterClose=false;
+  dataIndex.forEach((arr,key)=>{
+    if(!key.startsWith(expiry+'|')) return;
+    for(const item of arr){
+      if(normalizeTradingDate(item.date)!==dateKey) continue;
+      const time=sanitizeTimeStr(item.time);
+      if(time>='132000'&&time<='133000') nearClose=true;
+      if(time>'133000'&&time<='134500') afterClose=true;
+      if(nearClose&&afterClose) break;
+    }
+  });
+  return nearClose&&!afterClose;
+}
+
+function isSelectedSettlementDay(dateValue=''){
+  const selectedDate=normalizeTradingDate(dateValue||rawData[0]?.date||document.getElementById('dateSelect')?.value);
+  const expiry=document.getElementById('expirySelect')?.value||'';
+  if(!selectedDate||!expiry) return false;
+  return scheduledSettlementDate(expiry)===selectedDate||hasSettlementCutoffEvidence(selectedDate,expiry);
+}
+
+function withinChartWindow(tstr,dateValue=''){
+  if(!withinSession(tstr)) return false;
+  if(!settlementRangeEnabled||!isSelectedSettlementDay(dateValue)) return true;
+  const start=document.getElementById('settlementRangeStart')?.value||'084500';
+  const end=document.getElementById('settlementRangeEnd')?.value||'133000';
+  const time=sanitizeTimeStr(tstr);
+  return time>=start&&time<=end;
 }
 function fmtTime(dt){ const p=n=>String(n).padStart(2,'0'); return `${p(dt.getHours())}:${p(dt.getMinutes())}:${p(dt.getSeconds())}`; }
 function hhmmss(dt){ const p=n=>String(n).padStart(2,'0'); return `${p(dt.getHours())}${p(dt.getMinutes())}${p(dt.getSeconds())}`; }
@@ -2633,6 +2771,7 @@ async function loadSelectedDate(){
   document.getElementById('statSub20').style.display='none';
 
   if(rawData.length){ updateSelectors(); rebuildPlayTimes(); renderChart(); rebuildTTable(); }
+  syncSettlementRangeUI();
   updateUnderlyingBar(); updateBtUI(); updateAccountUI();
 
   const dateLabel=dateKey.replace(/_/g,'/');
@@ -2708,7 +2847,7 @@ expirySelect.addEventListener('change',()=>{
   typeAliases=detectTypeAliasesForExpiry(expirySelect.value);
   updateStrikes(); rebuildPlayTimes(); stopPlayback();
   cutoffTime=null; simTime=null; trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
-  prevTTablePrices.clear(); renderChart(); rebuildTTable(); updateUnderlyingBar(); updateAccountUI();
+  prevTTablePrices.clear(); renderChart(); rebuildTTable(); updateUnderlyingBar(); updateAccountUI(); syncSettlementRangeUI();
 });
 strikeSelect.addEventListener('change',updateTypes);
 typeSelect.addEventListener('change',()=>{
@@ -2724,6 +2863,27 @@ sessionSelect.addEventListener('change',()=>{
 periodSelect.addEventListener('change',()=>{
   taChartInited=false; taChartKey=''; renderChart(cutoffTime);
 });
+
+function applySettlementRangeChange(){
+  normalizeSettlementRangeOptions();
+  try{
+    localStorage.setItem('txoSettlementRangeEnabled',settlementRangeEnabled?'1':'0');
+    localStorage.setItem('txoSettlementRangeStart',settlementRangeStart.value);
+    localStorage.setItem('txoSettlementRangeEnd',settlementRangeEnd.value);
+  }catch(_){}
+  rebuildPlayTimes();
+  stopPlayback();
+  cutoffTime=null; simTime=null;
+  trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
+  renderChart(); updateUnderlyingBar(); updateAccountUI(); syncSettlementRangeUI();
+}
+
+settlementRangeToggle.addEventListener('click',()=>{
+  settlementRangeEnabled=!settlementRangeEnabled;
+  applySettlementRangeChange();
+});
+settlementRangeStart.addEventListener('change',applySettlementRangeChange);
+settlementRangeEnd.addEventListener('change',applySettlementRangeChange);
 
 // ═══════════════════════════════════
 // T-TABLE (Full 7-column from original with ATM, N20, change, VWAP)
@@ -3434,7 +3594,7 @@ function renderTA(cutoff=null){
   const k=keyOf(expiry,strike,type);
   const indexArr=dataIndex.get(k)||[];
   const cutMs=cutoff?+cutoff:Infinity;
-  const data=[]; for(const d of indexArr){if(d.dtms>cutMs) break; if(withinSession(d.time)) data.push(d);}
+  const data=[]; for(const d of indexArr){if(d.dtms>cutMs) break; if(withinChartWindow(d.time,d.date)) data.push(d);}
 
   const grouped={};
   for(const d of data){
@@ -3498,7 +3658,7 @@ function renderTX(cutoff=null){
   const txCutMs=cutoff?+cutoff:Infinity;
   let data=[]; for(const d of txDataIndex){if(d.dtms>txCutMs) break; data.push(d);}
 
-  data=data.filter(d=>withinSession(d.time));
+  data=data.filter(d=>withinChartWindow(d.time,d.date));
   if(data.length){
     const byTime={};
     for(const d of data){
@@ -3596,7 +3756,7 @@ function renderTAIEX(cutoff=null){
   const data=[];
   for(const d of taiexDataIndex){
     if(d.dtms>cutMs) break;
-    if(withinSession(d.time)) data.push(d);
+    if(withinChartWindow(d.time,d.date)) data.push(d);
   }
   if(!data.length){
     kinfo.innerText='TAIEX 加權指數：無資料';
@@ -3650,7 +3810,7 @@ function renderTrend(cutoff=null){
 
   const trendArr=dataIndex.get(keyOf(expiry,strike,type))||[];
   const trendCutMs=cutoff?+cutoff:Infinity;
-  const data=[]; for(const d of trendArr){if(d.dtms>trendCutMs) break; if(withinSession(d.time)) data.push(d);}
+  const data=[]; for(const d of trendArr){if(d.dtms>trendCutMs) break; if(withinChartWindow(d.time,d.date)) data.push(d);}
   if(!data.length) return;
 
   // 1-minute aggregation
@@ -3825,11 +3985,11 @@ function rebuildPlayTimes(){
   const tickSet=new Set();
   dataIndex.forEach((arr,k)=>{
     if(!k.startsWith(expiry+'|')) return;
-    for(const d of arr){if(withinSession(d.time)) tickSet.add(d.dtms);}
+    for(const d of arr){if(withinChartWindow(d.time,d.date)) tickSet.add(d.dtms);}
   });
   // Include timestamps from the selected OP reference underlying only.
   const underlyingIndex=underlyingMode==='taiex'?taiexDataIndex:txDataIndex;
-  for(const d of underlyingIndex){if(withinSession(d.time)) tickSet.add(d.dtms);}
+  for(const d of underlyingIndex){if(withinChartWindow(d.time,d.date)) tickSet.add(d.dtms);}
   playTimes=Array.from(tickSet).sort((a,b)=>a-b).map(x=>new Date(x));
   playIndex=0; simTime=null;
   btProgress.min=0; btProgress.max=Math.max(0,playTimes.length-1); btProgress.value=0;
@@ -4153,7 +4313,7 @@ function tickAutoOrders(cutoff){
   dataIndex.forEach((arr,k)=>{
     const parts=k.split('|'); if(parts[0]!==expiry) return;
     for(let i=arr.length-1;i>=0;i--){
-      const r=arr[i]; if(r.dtms>cutoffMs) continue; if(!withinSession(r.time)) continue;
+      const r=arr[i]; if(r.dtms>cutoffMs) continue; if(!withinChartWindow(r.time,r.date)) continue;
       latestMap.set(`${r.strike}|${r.type}`,r); break;
     }
   });
