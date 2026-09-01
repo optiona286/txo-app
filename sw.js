@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v19-action-history-navigation';
+const CACHE_NAME = 'txo-v20-settlement-time-range';
 const APP_SHELL = [
   './',
   './index.html',
