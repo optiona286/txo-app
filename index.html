@@ -1253,11 +1253,16 @@ td.price-01 > span { color: #fff !important; }
                   <option value="60">60分</option>
                 </select>
               </div>
-              <div class="field">
-                <div class="field-label">結算日時段</div>
-                <button class="settlement-range-toggle" id="settlementRangeToggle" type="button" aria-pressed="false">關閉</button>
-              </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="settlementRangeSection">
+        <div class="section-label">結算日時段</div>
+        <div class="card">
+          <div class="card-body">
+            <button class="settlement-range-toggle" id="settlementRangeToggle" type="button" aria-pressed="false">關閉</button>
             <div class="field-row" id="settlementRangeRow" style="margin-top:14px;display:none">
               <div class="field">
                 <div class="field-label">開始時間</div>
@@ -2177,7 +2182,7 @@ function syncSettlementRangeUI(){
     const start=settlementRangeStart.selectedOptions[0]?.textContent||'08:45';
     const end=settlementRangeEnd.selectedOptions[0]?.textContent||'13:30';
     settlementRangeNote.textContent=isSelectedSettlementDay()
-      ?`目前為所選契約結算日，K 線與回測限制為 ${start}～${end}`
+      ?`目前為所選契約結算日，圖表、報表與回測限制為 ${start}～${end}`
       :`已設定 ${start}～${end}；目前不是所選契約結算日，因此維持完整時段`;
   }
 }
@@ -2534,12 +2539,11 @@ function detectTypeAliasesForExpiry(expiry){
 function getLastPrice(expiry,strike,type,cutoff){
   const arr=dataIndex.get(keyOf(expiry,strike,type));
   if(!arr||!arr.length) return null;
-  const sess=sessionSelect.value;
   const cutMs=cutoff?+cutoff:Infinity;
   for(let i=arr.length-1;i>=0;i--){
     const d=arr[i];
     if(d.dtms>cutMs) continue;
-    if(sess!=='全部'&&!withinSession(d.time)) continue;
+    if(!withinChartWindow(d.time,d.date)) continue;
     return d.price;
   }
   return null;
@@ -2875,7 +2879,7 @@ function applySettlementRangeChange(){
   stopPlayback();
   cutoffTime=null; simTime=null;
   trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
-  renderChart(); updateUnderlyingBar(); updateAccountUI(); syncSettlementRangeUI();
+  renderChart(); rebuildTTable(); updateUnderlyingBar(); updateAccountUI(); syncSettlementRangeUI();
 }
 
 settlementRangeToggle.addEventListener('click',()=>{
@@ -2911,7 +2915,6 @@ function rebuildTTable(cutoff=null){
 
   const callStr=typeAliases.call, putStr=typeAliases.put;
   const cutMs=cutoff?+cutoff:Infinity;
-  const sess=sessionSelect.value;
 
   const map=new Map(), strikesSet=new Set();
   dataIndex.forEach((arr,k)=>{
@@ -2920,7 +2923,7 @@ function rebuildTTable(cutoff=null){
     let o=null;
     for(const r of arr){
       if(r.dtms>cutMs) break;
-      if(sess!=='全部'&&!withinSession(r.time)) continue;
+      if(!withinChartWindow(r.time,r.date)) continue;
       strikesSet.add(strike);
       const vol=r.volume||0;
       if(!o){o={open:r.price,last:r.price,lastDtms:r.dtms,vol:vol,vwap_num:r.price*vol};}
@@ -2944,7 +2947,7 @@ function rebuildTTable(cutoff=null){
       for(let i=taiexDataIndex.length-1;i>=0;i--){
         const d=taiexDataIndex[i];
         if(cutoff&&d.dtms>+cutoff) continue;
-        if(!withinSession(d.time)) continue;
+        if(!withinChartWindow(d.time,d.date)) continue;
         underlyingLastPx=d.close;
         break;
       }
@@ -2956,7 +2959,7 @@ function rebuildTTable(cutoff=null){
       for(let i=txDataIndex.length-1;i>=0;i--){
         const d=txDataIndex[i];
         if(cutoff&&d.dtms>+cutoff) continue;
-        if(!withinSession(d.time)) continue;
+        if(!withinChartWindow(d.time,d.date)) continue;
         const dExp=(d.expiry||'').replace(/\s/g,'');
         if(dExp===currentExpiry){underlyingLastPx=d.price; break;}
       }
@@ -2965,7 +2968,7 @@ function rebuildTTable(cutoff=null){
         for(let i=txDataIndex.length-1;i>=0;i--){
           const d=txDataIndex[i];
           if(cutoff&&d.dtms>+cutoff) continue;
-          if(!withinSession(d.time)) continue;
+          if(!withinChartWindow(d.time,d.date)) continue;
           const dExp=(d.expiry||'').replace(/\s/g,'');
           if(dExp.slice(0,6)===currentYM){underlyingLastPx=d.price; break;}
         }
@@ -2975,7 +2978,7 @@ function rebuildTTable(cutoff=null){
         for(let i=txDataIndex.length-1;i>=0;i--){
           const d=txDataIndex[i];
           if(cutoff&&d.dtms>+cutoff) continue;
-          if(!withinSession(d.time)) continue;
+          if(!withinChartWindow(d.time,d.date)) continue;
           underlyingLastPx=d.price; break;
         }
       }
@@ -3317,7 +3320,7 @@ tBody.addEventListener('contextmenu',(e)=>{
     const k=keyOf(expiry,_opDashStrike,typeStr);
     const arr=dataIndex.get(k)||[];
     const cutMs=cutoffTime?+cutoffTime:Infinity;
-    const data=[]; for(const d of arr){if(d.dtms>cutMs) break; if(withinSession(d.time)) data.push(d);}
+    const data=[]; for(const d of arr){if(d.dtms>cutMs) break; if(withinChartWindow(d.time,d.date)) data.push(d);}
 
     const grouped={};
     for(const d of data){
@@ -3895,7 +3898,7 @@ function updateUnderlyingBar(cutoff){
   const badge=document.getElementById('underlyingBadge2'); if(badge) badge.textContent='TX';
   const expiry=(expirySelect.value||'').replace(/\s/g,'');
   const txBarCutMs=cutoff?+cutoff:(cutoffTime?+cutoffTime:Infinity);
-  let pool=[]; for(const d of txDataIndex){if(d.dtms>txBarCutMs) break; if(withinSession(d.time)) pool.push(d);}
+  let pool=[]; for(const d of txDataIndex){if(d.dtms>txBarCutMs) break; if(withinChartWindow(d.time,d.date)) pool.push(d);}
 
   if(expiry&&pool.length){
     const same=pool.filter(d=>(d.expiry||'').replace(/\s/g,'')===expiry);
@@ -3941,7 +3944,7 @@ function updateTAIEXBar(cutoff){
   const pool=[];
   for(const d of taiexDataIndex){
     if(d.dtms>cutMs) break;
-    if(withinSession(d.time)) pool.push(d);
+    if(withinChartWindow(d.time,d.date)) pool.push(d);
   }
   const setValue=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value;};
   const badge=document.getElementById('underlyingBadge2'); if(badge) badge.textContent='TAIEX';

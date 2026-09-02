@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v20-settlement-time-range';
+const CACHE_NAME = 'txo-v21-home-analysis-time-range';
 const APP_SHELL = [
   './',
   './index.html',
