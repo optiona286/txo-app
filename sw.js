@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v21-home-analysis-time-range';
+const CACHE_NAME = 'txo-v22-preserve-option-side';
 const APP_SHELL = [
   './',
   './index.html',

@@ -2819,7 +2819,7 @@ function updateStrikes(){
   updateTypes();
 }
 
-function updateTypes(){
+function updateTypes(preferredType=''){
   const expiry=expirySelect.value, strike=strikeSelect.value;
   const callT=typeAliases?.call??'C', putT=typeAliases?.put??'P';
   const set=new Set();
@@ -2833,16 +2833,19 @@ function updateTypes(){
     return `<option value="${t}" ${disabled?'disabled':''}>${t}${disabled?'（無成交）':''}</option>`;
   }).join('');
   const key=`${expiry}_${strike}`, remembered=lastTypeSelectionMap[key];
-  const canUse=choices.includes(remembered)&&set.has(remembered);
-  if(canUse) typeSelect.value=remembered;
+  const desiredType=preferredType||remembered;
+  const canUse=choices.includes(desiredType);
+  if(canUse) typeSelect.value=desiredType;
   else{ const first=choices.find(t=>set.has(t))||choices[0]||''; typeSelect.value=first; }
+  if(typeSelect.value) lastTypeSelectionMap[key]=typeSelect.value;
   renderChart(cutoffTime); highlightTSelected(); updateAccountUI();
 }
 
 function moveStrike(offset){
   const opts=Array.from(strikeSelect.options);
   const idx=opts.findIndex(o=>o.value===strikeSelect.value);
-  if(idx+offset>=0&&idx+offset<opts.length){ strikeSelect.value=opts[idx+offset].value; updateTypes(); highlightTSelected(); }
+  const currentType=typeSelect.value;
+  if(idx+offset>=0&&idx+offset<opts.length){ strikeSelect.value=opts[idx+offset].value; updateTypes(currentType); highlightTSelected(); }
 }
 document.getElementById('prevStrikeBtn').addEventListener('click',()=>moveStrike(-1));
 document.getElementById('nextStrikeBtn').addEventListener('click',()=>moveStrike(1));
@@ -2853,7 +2856,7 @@ expirySelect.addEventListener('change',()=>{
   cutoffTime=null; simTime=null; trendChartInited=false; trendChartKey=''; taChartInited=false; taChartKey='';
   prevTTablePrices.clear(); renderChart(); rebuildTTable(); updateUnderlyingBar(); updateAccountUI(); syncSettlementRangeUI();
 });
-strikeSelect.addEventListener('change',updateTypes);
+strikeSelect.addEventListener('change',()=>updateTypes());
 typeSelect.addEventListener('change',()=>{
   const key=`${expirySelect.value}_${strikeSelect.value}`;
   lastTypeSelectionMap[key]=typeSelect.value;
