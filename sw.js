@@ -1,4 +1,4 @@
-const CACHE_NAME = 'txo-v22-preserve-option-side';
+const CACHE_NAME = 'txo-v23-instrument-detail-tabs';
 const APP_SHELL = [
   './',
   './index.html',

@@ -1093,6 +1093,99 @@ td.price-01 > span { color: #fff !important; }
   }
 }
 
+/* ════════════════════════════════
+   INSTRUMENT DETAIL — reference mobile proportions
+════════════════════════════════ */
+#pageChart .chart-page-layout { background:#000; }
+.chart-terminal-head { position:relative; z-index:25; flex-shrink:0; background:#000; }
+.instrument-quote-row {
+  height:76px; display:grid; grid-template-columns:1.35fr .7fr .82fr .82fr;
+  align-items:stretch; gap:4px; padding:3px 6px 2px; background:#000;
+}
+.chart-contract-sub { color:#00aee8 !important; font-size:10px !important; line-height:.7; }
+.instrument-last-block { min-width:0; display:flex; flex-direction:column; justify-content:center; align-items:flex-start; }
+.instrument-last-block strong { font-family:Arial,var(--mono); font-size:42px; line-height:.94; font-weight:500; color:#00e520; letter-spacing:-1px; }
+.instrument-last-block span { margin-top:5px; font-family:Arial,var(--mono); font-size:15px; line-height:1; font-weight:600; color:#00e520; white-space:nowrap; }
+.instrument-last-block.up strong,.instrument-last-block.up span { color:#ff2530; }
+.instrument-count-block { display:flex; flex-direction:column; justify-content:center; gap:8px; font-size:15px; }
+.instrument-count-block div { display:flex; align-items:center; justify-content:space-between; gap:4px; }
+.instrument-count-block span { color:#eee; }
+.instrument-count-block b { color:#f2e81b; font-family:Arial,var(--mono); font-size:15px; font-weight:500; }
+.instrument-count-block div:first-child b { color:#ff2530; }
+.instrument-side-box { margin:2px 0; border:1px solid #2d2d2d; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#020202; }
+.instrument-side-box.buy { border-color:#76292c; }.instrument-side-box.sell { border-color:#12651f; }
+.instrument-side-box span { color:#eee; font-size:16px; line-height:1; }
+.instrument-side-box b { margin-top:9px; color:#00df22; font-family:Arial,var(--mono); font-size:17px; font-weight:500; }
+.instrument-meta-row { height:24px; padding:0 5px; display:flex; align-items:center; gap:8px; color:#f4ea22; font-family:Arial,var(--font); font-size:12px; white-space:nowrap; border-bottom:1px solid #252525; }
+.instrument-meta-row #detailProductCode { overflow:hidden; text-overflow:ellipsis; }
+.instrument-meta-row #detailProductType { margin-right:auto; }
+.instrument-meta-row time { font-size:12px; }
+.settlement-badge { padding:2px 5px; border-radius:2px; color:#151515; background:#c99c22; }
+.settlement-badge.inactive { color:#aaa; background:#303030; }
+.instrument-tabs { height:42px; display:grid; grid-template-columns:repeat(4,1fr); background:#172126; border-bottom:2px solid #0fb8ef; }
+.instrument-tab { border:0; border-radius:0; background:transparent; color:#8e969b; font-family:var(--font); font-size:17px; font-weight:400; }
+.instrument-tab.active { background:#12b5ea; color:#f7f7f7; }
+.chart-menu-panel { display:none; position:absolute; right:4px; top:43px; z-index:60; width:150px; padding:3px; background:#252b2e; border:1px solid #586168; box-shadow:0 5px 16px #000; }
+.chart-menu-panel.open { display:grid; }
+.chart-menu-panel button { height:38px; border:0; border-bottom:1px solid #43494d; background:#121719; color:#eee; font-size:15px; }
+.instrument-content { flex:1; min-height:0; overflow:hidden; background:#000; }
+.instrument-view { display:none; width:100%; height:100%; min-height:0; background:#000; }
+.instrument-view.active { display:flex; }
+.detail-view,.technical-view,.trend-view { flex-direction:column; }
+.detail-table-wrap { flex:1; min-height:0; overflow:auto; }
+.detail-tick-table { width:100%; border-collapse:collapse; table-layout:fixed; font-family:Arial,var(--font); }
+.detail-tick-table thead { position:sticky; top:0; z-index:2; }
+.detail-tick-table th { height:41px; padding:0 4px; background:#172126; color:#f0f2f4; font-size:18px; font-weight:400; }
+.detail-tick-table td { height:39px; padding:0 4px; text-align:right; border-bottom:1px solid #202020; background:#070707; color:#00df22; font-size:17px; }
+.detail-tick-table tr:nth-child(even) td { background:#111; }
+.detail-tick-table td:first-child { text-align:left; color:#f2f2f2; }
+.detail-tick-table td.empty { text-align:center; color:#777; padding:30px 0; }
+.detail-tick-table td.up { color:#ff2530; }.detail-tick-table td.down { color:#00df22; }.detail-tick-table td.missing { color:#555; }
+.detail-mode-tabs { height:42px; display:flex; flex-shrink:0; padding:2px 7px; background:#1c292f; border-top:1px solid #29404a; }
+.detail-mode-tabs button { min-width:58px; padding:0 11px; border:1px solid #263b44; background:#1c292f; color:#899198; font-size:17px; }
+.detail-mode-tabs button.active { border-color:#1cbcff; background:#070b0d; color:#fff; }
+.trend-range-tabs { height:35px; flex-shrink:0; display:grid; grid-template-columns:repeat(7,1fr); gap:2px; padding:2px 3px; background:#333; }
+.trend-range-tabs button { min-width:0; padding:0; border:0; border-radius:3px; background:#202020; color:#f1f1f1; font-size:14px; }
+.trend-range-tabs button.active { color:#f0e632; box-shadow:inset 0 0 0 1px #555; }
+.trend-range-tabs button:disabled { opacity:1; color:#eee; }
+.trend-chart-host { flex:1; min-height:0; width:100%; }
+.technical-view { position:relative; }
+.technical-view .chart-tool-row { flex-shrink:0; }
+.technical-view .chart-container { flex:1; min-height:0; }
+.technical-view .chart-period-menu { top:34px; }
+.signals-view { overflow:auto; }
+.signals-dashboard { width:100%; min-height:100%; padding-bottom:18px; background:#000; color:#eee; font-family:Arial,var(--font); }
+.signal-period-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; padding:10px 6px 8px; }
+.signal-period-card { min-width:0; text-align:center; }
+.signal-period-card span { display:block; height:24px; color:#aaa; font-size:15px; }
+.signal-period-card b { display:block; padding:5px 1px; border-radius:3px; background:#06530c; color:#eee; font-size:14px; font-weight:400; white-space:nowrap; overflow:hidden; }
+.signal-period-card b.up-tone { background:#70161d; }.signal-period-card b.down-tone { background:#06530c; }
+.signal-period-card.active { outline:2px solid #159de0; outline-offset:2px; border-radius:2px; }
+.signal-time-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; padding:8px 6px; background:#121719; }
+.signal-time-card { padding:4px 3px; text-align:center; background:#263137; color:#aeb5b9; font-size:14px; }
+.signal-time-card b { display:block; margin-top:4px; background:#06530c; color:#eee; font-weight:400; }
+.signal-summary-row { display:grid; grid-template-columns:1.2fr 1fr .7fr .7fr; align-items:center; gap:6px; padding:7px 6px; font-size:17px; }
+.signal-summary-row b { padding:3px 6px; text-align:center; background:#06530c; font-weight:400; }
+.signal-section-title { margin-top:5px; padding:7px 6px; text-align:center; background:#034760; color:#d9e1e5; font-size:16px; }
+.indicator-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:7px 6px; background:#171f23; }
+.indicator-card { min-height:76px; padding:4px; border:1px solid #777; text-align:center; background:#050708; }
+.indicator-card.weak { border-color:#087219; }
+.indicator-card label { display:block; color:#aeb3b6; font-size:16px; }
+.indicator-card strong { display:block; margin-top:3px; color:#eee; font-size:20px; font-weight:400; }
+.indicator-card small { display:block; margin-top:4px; color:#00df22; font-size:14px; }
+.signals-empty { padding:50px 10px; text-align:center; color:#777; }
+
+@media (max-width: 420px) {
+  .instrument-quote-row { height:72px; padding-left:4px; padding-right:4px; gap:3px; }
+  .instrument-last-block strong { font-size:38px; }
+  .instrument-last-block span,.instrument-count-block,.instrument-count-block b { font-size:13px; }
+  .instrument-side-box span { font-size:15px; }.instrument-side-box b { font-size:16px; }
+  .instrument-meta-row { gap:5px; font-size:11px; }.instrument-meta-row time { font-size:11px; }
+  .instrument-tabs { height:40px; }.instrument-tab { font-size:16px; }
+  .detail-tick-table th { font-size:17px; }.detail-tick-table td { font-size:16px; }
+  .signal-period-grid { gap:3px; }.signal-period-card span { font-size:13px; }.signal-period-card b { font-size:12px; }
+}
+
 </style>
 </head>
 <body>
@@ -1392,7 +1485,7 @@ td.price-01 > span { color: #fff !important; }
     <!-- ──── PAGE: K 線圖 (full height) ──── -->
     <div class="page" id="pageChart">
       <div class="chart-page-layout" id="chartPageLayout">
-        <div class="chart-terminal-head" aria-label="K 線圖抬頭">
+        <div class="chart-terminal-head" aria-label="商品詳情抬頭">
           <div class="chart-contract-row">
             <button class="chart-back" id="chartBack" type="button" aria-label="返回報價表">‹</button>
             <button class="chart-contract-step" id="chartHeaderPrev" type="button" aria-label="上一檔履約價">◀</button>
@@ -1403,63 +1496,45 @@ td.price-01 > span { color: #fff !important; }
             <button class="chart-contract-step" id="chartHeaderNext" type="button" aria-label="下一檔履約價">▶</button>
             <button class="chart-menu" id="chartMenuBtn" type="button" aria-label="圖表選項">☰</button>
           </div>
-          <div class="chart-tool-row">
-            <button class="chart-tool period" id="chartPeriodDisplay" type="button" aria-expanded="false" aria-controls="chartPeriodMenu">5分&nbsp;›</button>
-            <button class="chart-tool underlying" id="chartUnderlyingToggle" type="button">台指期</button>
-            <button class="chart-tool" id="chartLookupBtn" type="button">＋查價</button>
-            <button class="chart-tool" type="button" aria-label="圖表設定">⚙</button>
-            <button class="chart-tool pan" type="button" aria-label="平移圖表">✥</button>
+          <div class="instrument-quote-row">
+            <div class="instrument-last-block"><strong id="detailLastPrice">—</strong><span id="detailChange">—</span></div>
+            <div class="instrument-count-block"><div><span>單:</span><b id="detailLastVolume">—</b></div><div><span>總:</span><b id="detailTotalVolume">—</b></div></div>
+            <div class="instrument-side-box buy"><span>買進</span><b id="detailBidPrice">—</b></div>
+            <div class="instrument-side-box sell"><span>賣出</span><b id="detailAskPrice">—</b></div>
           </div>
-          <div class="chart-period-menu" id="chartPeriodMenu" aria-label="K 線週期選擇">
-            <button class="chart-period-option" type="button" data-period="1">1分</button>
-            <button class="chart-period-option" type="button" data-period="3">3分</button>
-            <button class="chart-period-option" type="button" data-period="5">5分</button>
-            <button class="chart-period-option" type="button" data-period="10">10分</button>
-            <button class="chart-period-option" type="button" data-period="15">15分</button>
-            <button class="chart-period-option" type="button" data-period="30">30分</button>
-            <button class="chart-period-option" type="button" data-period="60">60分</button>
+          <div class="instrument-meta-row">
+            <span id="detailProductCode">—</span><span id="detailProductType">選擇權</span>
+            <span class="settlement-badge" id="detailSettlementBadge">一般日</span><time id="detailQuoteTime">--/-- --:--:--</time>
           </div>
-          <div class="chart-lookup-row" id="chartLookupRow" aria-label="K 線查價資訊">
-            <div class="chart-lookup-cell time"><span>時</span><b id="lookupTime">--:--</b></div>
-            <div class="chart-lookup-cell open"><span>開</span><b id="lookupOpen">—</b></div>
-            <div class="chart-lookup-cell high"><span>高</span><b id="lookupHigh">—</b></div>
-            <div class="chart-lookup-cell low"><span>低</span><b id="lookupLow">—</b></div>
-            <div class="chart-lookup-cell close"><span>收</span><b id="lookupClose">—</b></div>
-            <div class="chart-lookup-cell volume"><span>量</span><b id="lookupVolume">—</b></div>
-            <button class="chart-lookup-close" id="chartLookupClose" type="button" aria-label="結束查價">×</button>
+          <nav class="instrument-tabs" aria-label="商品詳情功能">
+            <button class="instrument-tab" id="tabDetail" data-tab="detail" type="button">明細</button>
+            <button class="instrument-tab" id="tabTrend" data-tab="trend" type="button">走勢</button>
+            <button class="instrument-tab active" id="tabTA" data-tab="technical" type="button">技術</button>
+            <button class="instrument-tab" id="tabSignals" data-tab="signals" type="button">趨勢</button>
+          </nav>
+          <div class="chart-menu-panel" id="chartMenuPanel">
+            <button type="button" data-open-tab="detail">逐筆明細</button><button type="button" data-open-tab="trend">走勢圖</button>
+            <button type="button" data-open-tab="technical">技術分析</button><button type="button" data-open-tab="signals">趨勢指標</button>
           </div>
         </div>
-        <div class="chart-area" style="flex:1">
-          <div class="chart-tabs">
-            <div id="chartName" class="chart-name">—</div>
-            <span id="chartBtClock" style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent2);margin-left:6px;margin-right:auto;display:none"></span>
-            <div class="chart-tabs-right">
-              <button class="chart-tab active" id="tabTA" data-tab="ta">技術分析</button>
-              <button class="chart-tab" id="tabTrend" data-tab="trend">走勢圖</button>
-              <div class="chart-strike-nav">
-                <button class="chart-strike-btn" id="chartStrikeUp" title="上一檔履約價">▲</button>
-                <button class="chart-strike-btn" id="chartStrikeDown" title="下一檔履約價">▼</button>
-              </div>
-            </div>
-          </div>
-          <div class="chart-container">
-            <div id="chartTA" style="width:100%;height:100%;position:absolute;inset:0"></div>
-            <div id="chartTrend" style="width:100%;height:100%;position:absolute;inset:0;visibility:hidden"></div>
-            <div id="kinfo" class="kinfo-float"></div>
-            <div class="chart-study-strip" aria-label="均線資訊">
-              <span class="study-label">MA&nbsp;›</span>
-              <span class="study-ma5" id="studyMa5">5T:—</span>
-              <span class="study-ma10" id="studyMa10">10T:—</span>
-              <span class="study-ma20" id="studyMa20">20T:—</span>
-            </div>
-            <div class="chart-volume-panel" aria-label="成交量資訊">
-            <div class="chart-volume-head">
-              <span class="study-label">VOL&nbsp;›</span>
-              <span class="study-ma5" id="studyVolLast">5T:—</span>
-              <span class="study-ma10" id="studyVolAvg">10T:—</span>
-            </div>
-            </div>
-          </div>
+        <div id="chartName" class="chart-name" hidden>—</div><span id="chartBtClock" hidden></span>
+        <button id="chartStrikeUp" type="button" hidden>▲</button><button id="chartStrikeDown" type="button" hidden>▼</button>
+        <div class="chart-area instrument-content" style="flex:1">
+          <section class="instrument-view detail-view" id="chartDetailView">
+            <div class="detail-table-wrap"><table class="detail-tick-table"><thead><tr><th>時間</th><th>買進</th><th>賣出</th><th>成交</th><th>單量</th></tr></thead><tbody id="detailTickBody"><tr><td colspan="5" class="empty">尚無資料</td></tr></tbody></table></div>
+            <div class="detail-mode-tabs"><button class="active" type="button" data-detail-mode="realtime">即時</button><button type="button" data-detail-mode="first">首筆</button><button type="button" data-detail-mode="range">區間</button></div>
+          </section>
+          <section class="instrument-view trend-view" id="chartTrendView">
+            <div class="trend-range-tabs" aria-label="走勢區間"><button class="active" type="button">當日</button><button type="button" disabled>五日</button><button type="button" disabled>近月</button><button type="button" disabled>三月</button><button type="button" disabled>六月</button><button type="button" disabled>一年</button><button type="button" disabled>五年</button></div>
+            <div id="chartTrend" class="trend-chart-host"></div>
+          </section>
+          <section class="instrument-view technical-view active" id="chartTechnicalView">
+            <div class="chart-tool-row"><button class="chart-tool period" id="chartPeriodDisplay" type="button" aria-expanded="false" aria-controls="chartPeriodMenu">5分&nbsp;›</button><button class="chart-tool underlying" id="chartUnderlyingToggle" type="button">台指期</button><button class="chart-tool" id="chartLookupBtn" type="button">＋查價</button><button class="chart-tool" type="button" aria-label="圖表設定">⚙</button><button class="chart-tool pan" type="button" aria-label="平移圖表">✥</button></div>
+            <div class="chart-period-menu" id="chartPeriodMenu" aria-label="K 線週期選擇"><button class="chart-period-option" type="button" data-period="1">1分</button><button class="chart-period-option" type="button" data-period="3">3分</button><button class="chart-period-option" type="button" data-period="5">5分</button><button class="chart-period-option" type="button" data-period="10">10分</button><button class="chart-period-option" type="button" data-period="15">15分</button><button class="chart-period-option" type="button" data-period="30">30分</button><button class="chart-period-option" type="button" data-period="60">60分</button></div>
+            <div class="chart-lookup-row" id="chartLookupRow" aria-label="K 線查價資訊"><div class="chart-lookup-cell time"><span>時</span><b id="lookupTime">--:--</b></div><div class="chart-lookup-cell open"><span>開</span><b id="lookupOpen">—</b></div><div class="chart-lookup-cell high"><span>高</span><b id="lookupHigh">—</b></div><div class="chart-lookup-cell low"><span>低</span><b id="lookupLow">—</b></div><div class="chart-lookup-cell close"><span>收</span><b id="lookupClose">—</b></div><div class="chart-lookup-cell volume"><span>量</span><b id="lookupVolume">—</b></div><button class="chart-lookup-close" id="chartLookupClose" type="button" aria-label="結束查價">×</button></div>
+            <div class="chart-container"><div id="chartTA" style="width:100%;height:100%;position:absolute;inset:0"></div><div id="kinfo" class="kinfo-float"></div><div class="chart-study-strip" aria-label="均線資訊"><span class="study-label">MA&nbsp;›</span><span class="study-ma5" id="studyMa5">5T:—</span><span class="study-ma10" id="studyMa10">10T:—</span><span class="study-ma20" id="studyMa20">20T:—</span></div><div class="chart-volume-panel" aria-label="成交量資訊"><div class="chart-volume-head"><span class="study-label">VOL&nbsp;›</span><span class="study-ma5" id="studyVolLast">5T:—</span><span class="study-ma10" id="studyVolAvg">10T:—</span></div></div></div>
+          </section>
+          <section class="instrument-view signals-view" id="chartSignalsView"><div id="signalsDashboard" class="signals-dashboard"><div class="signals-empty">尚無足夠資料</div></div></section>
         </div>
       </div>
     </div>
@@ -1911,7 +1986,7 @@ td.price-01 > span { color: #fff !important; }
 
   function applyAppLayer(layer){
     setChartPeriodMenu(layer==='periodMenu');
-    document.querySelector('#pageChart .chart-tabs')?.classList.toggle('mobile-open',layer==='chartMenu');
+    document.getElementById('chartMenuPanel')?.classList.toggle('open',layer==='chartMenu');
     if(chartLookupActive!==(layer==='lookup')) setChartLookup(layer==='lookup');
     window.applyOpDashLayer?.(layer==='opDash');
   }
@@ -2006,7 +2081,7 @@ td.price-01 > span { color: #fff !important; }
 // CORE ENGINE — FULL PORT FROM ORIGINAL
 // ═══════════════════════════════════
 const chartTrend=echarts.init(document.getElementById('chartTrend'));
-let activeChartTab='ta';
+let activeChartTab='technical';
 
 // ── LWC K線圖 state ──
 let _lwcChart=null, _lwcCandleSeries=null, _lwcVolumeSeries=null;
@@ -2201,11 +2276,13 @@ function syncTerminalChrome(){
   const txPrice2=document.getElementById('txPrice2');
   const txChg2=document.getElementById('txChg2');
   if(chainExpiry) chainExpiry.textContent=`台指 ${expiry}`;
-  if(chartHeaderName) chartHeaderName.textContent=chartNameNode?.textContent||'—';
+  if(chartHeaderName){
+    if(currentChartMode==='tx') chartHeaderName.textContent=`台指期 ${expiry}`;
+    else if(currentChartMode==='taiex') chartHeaderName.textContent='加權指數 TAIEX';
+    else chartHeaderName.textContent=strikeSelect.value?`台指${expiry}_${strikeSelect.value}${typeSelect.value||''}`:(chartNameNode?.textContent||'—');
+  }
   if(chartHeaderSub){
-    if(currentChartMode==='tx') chartHeaderSub.textContent='TX 台指期';
-    else if(currentChartMode==='taiex') chartHeaderSub.textContent='TAIEX 加權指數';
-    else chartHeaderSub.textContent=strikeSelect.value?`TXO${strikeSelect.value}${typeSelect.value||''}`:'TXO';
+    chartHeaderSub.textContent='▼';
   }
   if(periodDisplay) periodDisplay.innerHTML=`${periodSelect.value||5}分&nbsp;›`;
   document.querySelectorAll('.chart-period-option').forEach(button=>
@@ -2243,7 +2320,7 @@ document.getElementById('chartBack')?.addEventListener('click',()=>window.naviga
 document.getElementById('chartHeaderPrev')?.addEventListener('click',()=>document.getElementById('chartStrikeUp')?.click());
 document.getElementById('chartHeaderNext')?.addEventListener('click',()=>document.getElementById('chartStrikeDown')?.click());
 document.getElementById('chartMenuBtn')?.addEventListener('click',()=>{
-  const open=document.querySelector('#pageChart .chart-tabs')?.classList.contains('mobile-open');
+  const open=document.getElementById('chartMenuPanel')?.classList.contains('open');
   open?window.closeAppLayer?.('chartMenu'):window.openAppLayer?.('chartMenu');
 });
 document.getElementById('chartLookupBtn')?.addEventListener('click',()=>window.openAppLayer?.('lookup'));
@@ -2311,18 +2388,186 @@ function updateStudyStrip(kdata,periods,volumes=[]){
 }
 
 // Chart tabs
-const tabTA=document.getElementById('tabTA'), tabTrend=document.getElementById('tabTrend');
+const tabDetail=document.getElementById('tabDetail'), tabTA=document.getElementById('tabTA');
+const tabTrend=document.getElementById('tabTrend'), tabSignals=document.getElementById('tabSignals');
 function setChartTab(tab){
-  if(tab==='trend'&&chartLookupActive) window.closeAppLayer?.('lookup');
+  if(tab==='ta') tab='technical';
+  if(tab!=='technical'&&chartLookupActive) window.closeAppLayer?.('lookup');
   activeChartTab=tab;
-  tabTA.classList.toggle('active',tab==='ta');
+  tabDetail.classList.toggle('active',tab==='detail');
   tabTrend.classList.toggle('active',tab==='trend');
-  document.getElementById('chartTA').style.visibility=tab==='ta'?'visible':'hidden';
-  document.getElementById('chartTrend').style.visibility=tab==='trend'?'visible':'hidden';
+  tabTA.classList.toggle('active',tab==='technical');
+  tabSignals.classList.toggle('active',tab==='signals');
+  document.getElementById('chartDetailView').classList.toggle('active',tab==='detail');
+  document.getElementById('chartTrendView').classList.toggle('active',tab==='trend');
+  document.getElementById('chartTechnicalView').classList.toggle('active',tab==='technical');
+  document.getElementById('chartSignalsView').classList.toggle('active',tab==='signals');
   renderChart(cutoffTime);
+  if(tab==='detail') renderDetailTicks(cutoffTime);
+  if(tab==='signals') renderSignalsDashboard(cutoffTime);
+  setTimeout(()=>{
+    if(tab==='trend') try{chartTrend.resize();}catch(_){}
+    if(tab==='technical') try{_lwcChart?.resize(document.getElementById('chartTA').clientWidth,document.getElementById('chartTA').clientHeight);}catch(_){}
+  },30);
 }
-tabTA.addEventListener('click',()=>setChartTab('ta'));
+tabDetail.addEventListener('click',()=>setChartTab('detail'));
 tabTrend.addEventListener('click',()=>setChartTab('trend'));
+tabTA.addEventListener('click',()=>setChartTab('technical'));
+tabSignals.addEventListener('click',()=>setChartTab('signals'));
+document.querySelectorAll('#chartMenuPanel [data-open-tab]').forEach(button=>button.addEventListener('click',()=>{
+  setChartTab(button.dataset.openTab); window.closeAppLayer?.('chartMenu');
+}));
+
+let detailListMode='realtime';
+document.querySelectorAll('[data-detail-mode]').forEach(button=>button.addEventListener('click',()=>{
+  detailListMode=button.dataset.detailMode;
+  document.querySelectorAll('[data-detail-mode]').forEach(item=>item.classList.toggle('active',item===button));
+  renderDetailTicks(cutoffTime);
+}));
+
+function selectedInstrumentRows(cutoff=null){
+  const cutMs=cutoff?+cutoff:Infinity;
+  let source=[];
+  if(currentChartMode==='taiex'){
+    source=taiexDataIndex.map(d=>({...d,price:d.close}));
+  }else if(currentChartMode==='tx'){
+    source=txDataIndex;
+    const expiry=(expirySelect.value||'').replace(/\s/g,'');
+    const exact=source.filter(d=>(d.expiry||'').replace(/\s/g,'')===expiry);
+    if(exact.length) source=exact;
+    else{
+      const sameMonth=source.filter(d=>(d.expiry||'').replace(/\s/g,'').slice(0,6)===expiry.slice(0,6));
+      if(sameMonth.length) source=sameMonth;
+    }
+  }else{
+    source=dataIndex.get(keyOf(expirySelect.value,strikeSelect.value,typeSelect.value))||[];
+  }
+  return source.filter(d=>d.dtms<=cutMs&&withinChartWindow(d.time,d.date));
+}
+
+function detailPrice(value){
+  const n=Number(value); if(!Number.isFinite(n)) return '—';
+  return Number.isInteger(n)?String(n):String(Number(n.toFixed(2)));
+}
+
+function syncInstrumentDetailHeader(cutoff=null){
+  const rows=selectedInstrumentRows(cutoff);
+  const last=rows[rows.length-1], first=rows[0];
+  const lastPrice=Number(last?.price), openPrice=Number(first?.price);
+  const change=Number.isFinite(lastPrice)&&Number.isFinite(openPrice)?lastPrice-openPrice:NaN;
+  const pct=Number.isFinite(change)&&openPrice?change/openPrice*100:NaN;
+  const lastBlock=document.querySelector('.instrument-last-block');
+  document.getElementById('detailLastPrice').textContent=detailPrice(lastPrice);
+  document.getElementById('detailChange').textContent=Number.isFinite(change)
+    ?`${change>=0?'▲':'▼'} ${detailPrice(Math.abs(change))} (${Math.abs(pct).toFixed(2)}%)`:'—';
+  lastBlock?.classList.toggle('up',change>0);
+  document.getElementById('detailLastVolume').textContent=last?fmtNum(last.volume||0):'—';
+  document.getElementById('detailTotalVolume').textContent=rows.length?fmtNum(rows.reduce((sum,row)=>sum+(Number(row.volume)||0),0)):'—';
+  document.getElementById('detailBidPrice').textContent='—';
+  document.getElementById('detailAskPrice').textContent='—';
+  let code='—',kind='選擇權';
+  if(currentChartMode==='taiex'){code='TAIEX';kind='加權指數';}
+  else if(currentChartMode==='tx'){code=`TX${expirySelect.value||''}`;kind='台指期';}
+  else code=`TXO${strikeSelect.value||''}${typeSelect.value||''}`;
+  document.getElementById('detailProductCode').textContent=code;
+  document.getElementById('detailProductType').textContent=kind;
+  const settlement=isSelectedSettlementDay(last?.date);
+  const badge=document.getElementById('detailSettlementBadge');
+  badge.textContent=settlement?'結算日':'一般日'; badge.classList.toggle('inactive',!settlement);
+  const date=normalizeTradingDate(last?.date);
+  document.getElementById('detailQuoteTime').textContent=last
+    ?`${date?date.slice(4,6)+'/'+date.slice(6,8)+' ':''}${String(last.time||'').replace(/[^0-9]/g,'').replace(/^(\d{2})(\d{2})(\d{2}).*/, '$1:$2:$3')}`
+    :'--/-- --:--:--';
+}
+
+function renderDetailTicks(cutoff=null){
+  const rows=selectedInstrumentRows(cutoff);
+  const body=document.getElementById('detailTickBody'); if(!body) return;
+  if(!rows.length){body.innerHTML='<tr><td colspan="5" class="empty">尚無資料</td></tr>';return;}
+  let indexed=rows.map((row,index)=>({row,index}));
+  if(detailListMode==='first') indexed=indexed.slice(0,250);
+  else indexed=indexed.slice(-500).reverse();
+  body.innerHTML=indexed.map(({row,index})=>{
+    const previous=rows[index-1];
+    const cls=!previous?'':row.price>previous.price?'up':row.price<previous.price?'down':'';
+    const time=String(row.time||'').replace(/[^0-9]/g,'').replace(/^(\d{2})(\d{2})(\d{2}).*/, '$1:$2:$3');
+    return `<tr><td>${time}</td><td class="missing">—</td><td class="missing">—</td><td class="${cls}">${detailPrice(row.price)}</td><td class="${cls}">${fmtNum(row.volume||0)}</td></tr>`;
+  }).join('');
+}
+
+function aggregateSignalBars(rows,period){
+  const grouped=new Map(), step=period*60000;
+  rows.forEach(row=>{
+    const time=Math.floor(row.dtms/step)*step;
+    let bar=grouped.get(time);
+    if(!bar){bar={time,open:row.price,high:row.price,low:row.price,close:row.price,volume:Number(row.volume)||0};grouped.set(time,bar);}
+    else{bar.high=Math.max(bar.high,row.price);bar.low=Math.min(bar.low,row.price);bar.close=row.price;bar.volume+=Number(row.volume)||0;}
+  });
+  return [...grouped.values()].sort((a,b)=>a.time-b.time);
+}
+function lastSMA(values,period){if(values.length<period)return null;return values.slice(-period).reduce((a,b)=>a+b,0)/period;}
+function emaSeries(values,period){
+  if(!values.length)return[];const k=2/(period+1),out=[values[0]];
+  for(let i=1;i<values.length;i++)out.push(values[i]*k+out[i-1]*(1-k));return out;
+}
+function rsiValue(values,period=14){
+  if(values.length<=period)return null;let gain=0,loss=0;
+  for(let i=values.length-period;i<values.length;i++){const d=values[i]-values[i-1];if(d>0)gain+=d;else loss-=d;}
+  if(!loss)return 100;const rs=gain/loss;return 100-100/(1+rs);
+}
+function signalForBars(bars){
+  if(!bars.length)return{score:0,label:'—'};const closes=bars.map(b=>b.close),last=closes.at(-1);let score=0;
+  [5,10,20].forEach(period=>{const ma=lastSMA(closes,period);if(ma!=null)score+=last>=ma?1:-1;});
+  if(closes.length>1)score+=last>=closes.at(-2)?1:-1;
+  const label=score>=3?'強':score>=1?'偏強':score<=-3?'弱':score<=-1?'微弱':'中性';
+  return{score,label};
+}
+function indicatorTone(value,strongWhenHigh=true){if(value==null)return'—';return strongWhenHigh?(value>=0?'偏強':'偏弱'):(value>=0?'偏弱':'偏強');}
+function buildSignalIndicators(bars){
+  const closes=bars.map(b=>b.close),last=closes.at(-1),ma=p=>lastSMA(closes,p);
+  const ema12=emaSeries(closes,12),ema26=emaSeries(closes,26);
+  const dif=ema12.length&&ema26.length?ema12.at(-1)-ema26.at(-1):null;
+  const macdLine=closes.map((_,i)=>(ema12[i]??0)-(ema26[i]??0)); const dea=emaSeries(macdLine,9).at(-1); const macd=dif==null?null:dif-dea;
+  const recent9=bars.slice(-9),h9=recent9.length?Math.max(...recent9.map(b=>b.high)):null,l9=recent9.length?Math.min(...recent9.map(b=>b.low)):null;
+  const k=h9!=null&&h9!==l9?(last-l9)/(h9-l9)*100:null;
+  const recent14=bars.slice(-14),h14=recent14.length?Math.max(...recent14.map(b=>b.high)):null,l14=recent14.length?Math.min(...recent14.map(b=>b.low)):null;
+  const wr=h14!=null&&h14!==l14?(h14-last)/(h14-l14)*-100:null;
+  let plus=0,minus=0,tr=0;
+  recent14.forEach((bar,i)=>{if(!i)return;const prev=recent14[i-1],up=bar.high-prev.high,dn=prev.low-bar.low;plus+=up>dn&&up>0?up:0;minus+=dn>up&&dn>0?dn:0;tr+=Math.max(bar.high-bar.low,Math.abs(bar.high-prev.close),Math.abs(bar.low-prev.close));});
+  const dmi=tr?((plus-minus)/tr*100):null,rsi=rsiValue(closes,14);
+  const m20=ma(20),sd=closes.length>=20?Math.sqrt(closes.slice(-20).reduce((s,v)=>s+(v-m20)**2,0)/20):null;
+  let track='—';if(sd!=null)track=last>m20+2*sd?'突破壓力':last<m20-2*sd?'跌破支撐':'軌道內';
+  return{ma,last,dif,macd,k,rsi,dmi,wr,track};
+}
+
+function renderSignalsDashboard(cutoff=null){
+  const root=document.getElementById('signalsDashboard'); if(!root) return;
+  const rows=selectedInstrumentRows(cutoff),periods=[1,3,5,15,30,60],selected=Number(periodSelect.value)||5;
+  if(!rows.length){root.innerHTML='<div class="signals-empty">尚無足夠資料</div>';return;}
+  const results=periods.map(period=>({period,bars:aggregateSignalBars(rows,period)})).map(item=>({...item,signal:signalForBars(item.bars)}));
+  const chosen=results.find(item=>item.period===selected)||results[2]; const indicators=buildSignalIndicators(chosen.bars);
+  const strong=results.filter(r=>r.signal.score>0).length,weak=results.filter(r=>r.signal.score<0).length;
+  const toneClass=score=>score>0?'up-tone':'down-tone';
+  const periodHtml=results.map(result=>`<button class="signal-period-card ${result.period===chosen.period?'active':''}" type="button" data-signal-period="${result.period}"><span>${result.period}分</span><b class="${toneClass(result.signal.score)}">${result.signal.label}</b></button>`).join('')+
+    `<div class="signal-period-card"><span>日</span><b>—</b></div>`;
+  const recent=chosen.bars.slice(-5).map(bar=>{const signal=signalForBars(chosen.bars.filter(b=>b.time<=bar.time));const d=new Date(bar.time);return `<div class="signal-time-card">${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}<b>${signal.label}</b></div>`;}).join('');
+  const fmt=value=>value==null?'—':detailPrice(value);
+  const maCards=[5,10,20,60,120,240].map(period=>{const value=indicators.ma(period);return `<div class="indicator-card ${value!=null&&indicators.last<value?'weak':''}"><label>MA${period}</label><strong>${fmt(value)}</strong><small>${value==null?'—':indicators.last>=value?'偏強':'偏弱'}</small></div>`;}).join('');
+  const techCards=[
+    ['軌道',indicators.last,indicators.track],['KD(9)',indicators.k,indicators.k==null?'—':indicators.k>80?'超買':indicators.k<20?'超賣':'中性'],
+    ['MACD(12,26)',indicators.macd,indicatorTone(indicators.macd)],['RSI(14)',indicators.rsi,indicators.rsi==null?'—':indicators.rsi>70?'超買':indicators.rsi<30?'超賣':'中性'],
+    ['DMI(14)',indicators.dmi,indicatorTone(indicators.dmi)],['威廉',indicators.wr,indicators.wr==null?'—':indicators.wr>-20?'超買':indicators.wr<-80?'超賣':'中性']
+  ].map(([label,value,state])=>`<div class="indicator-card"><label>${label}</label><strong>${fmt(value)}</strong><small>${state}</small></div>`).join('');
+  const last=rows.at(-1),date=normalizeTradingDate(last.date),stamp=`${date.slice(4,6)}/${date.slice(6,8)} ${String(last.time||'').replace(/[^0-9]/g,'').replace(/^(\d{2})(\d{2})(\d{2}).*/, '$1:$2:$3')}`;
+  root.innerHTML=`<div class="signal-period-grid">${periodHtml}</div><div class="signal-time-strip">${recent}</div>
+    <div class="signal-summary-row"><span>移動平均線</span><b>${signalForBars(chosen.bars).label}</b><span>強(${strong})</span><span>弱(${weak})</span></div>
+    <div class="signal-summary-row"><span>技術分析</span><b>${signalForBars(chosen.bars).label}</b><span>強(${strong})</span><span>弱(${weak})</span></div>
+    <div class="signal-section-title">ⓘ ${stamp}　移動平均線</div><div class="indicator-grid">${maCards}</div>
+    <div class="signal-section-title">技術分析</div><div class="indicator-grid">${techCards}</div>`;
+  root.querySelectorAll('[data-signal-period]').forEach(button=>button.addEventListener('click',()=>{
+    periodSelect.value=button.dataset.signalPeriod; periodSelect.dispatchEvent(new Event('change',{bubbles:true})); renderSignalsDashboard(cutoffTime);
+  }));
+}
 
 // BT controls
 const btStart=document.getElementById('btStart'), btPause=document.getElementById('btPause');
@@ -3446,6 +3691,9 @@ function renderChart(cutoff=null){
   if(currentChartMode==='tx'){ renderTX(cutoff); renderTrend(cutoff); }
   else if(currentChartMode==='taiex'){ renderTAIEX(cutoff); renderTrend(cutoff); }
   else{ renderTA(cutoff); renderTrend(cutoff); }
+  syncInstrumentDetailHeader(cutoff);
+  if(activeChartTab==='detail') renderDetailTicks(cutoff);
+  if(activeChartTab==='signals') renderSignalsDashboard(cutoff);
 }
 
 // Chart strike navigation buttons
